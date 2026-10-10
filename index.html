@@ -304,6 +304,29 @@
   .tool-card .open-row svg{width:13px; height:13px; transition:transform .25s ease;}
   .tool-card:hover .open-row svg{transform:translate(3px,-3px);}
 
+  /* Wide card: takes a full row of its own (used for the Company Profile PDF).
+     Desktop = icon | title + tag | open link in one line. Phones = stacks like the other cards. */
+  .tool-card.wide{
+    flex-basis:100%;
+    display:flex; align-items:center; gap:22px;
+    padding:22px 26px;
+  }
+  .tool-card.wide .ico-wrap{margin-bottom:0; flex-shrink:0;}
+  .tool-card.wide .card-text{flex:1; min-width:0;}
+  .tool-card.wide h3{margin-bottom:6px;}
+  .tool-card.wide .tag{margin:0;}
+  .tool-card.wide .open-row{flex-shrink:0;}
+  .tool-card .file-badge{
+    font-family:var(--font-mono);
+    font-size:10.5px; font-weight:600; letter-spacing:.08em;
+    color:var(--maroon);
+    border:1px solid var(--maroon-soft);
+    border-radius:3px;
+    padding:2px 6px;
+    margin-left:8px;
+    vertical-align:middle;
+  }
+
   /* ================= ABOUT ================= */
   #about{background:var(--white); border-top:1px solid var(--line); border-bottom:1px solid var(--line);}
   .about-grid{
@@ -543,6 +566,11 @@
     .footer-grid{gap:30px;}
     .stat-row{gap:26px 20px;}
   }
+  @media (max-width:760px){
+    /* 5 sticky-bar buttons with text need ~750px; below that show icons only */
+    .bar-tools .bar-label{display:none;}
+    .bar-btn{padding:8px 10px;}
+  }
   @media (max-width:600px){
     header.hero{min-height:100svh; padding:92px 0 76px;}
     .hero-photo{object-position:center center;}
@@ -554,6 +582,13 @@
     .bar-btn{padding:8px 10px;}
     section{padding:56px 0;}
     .video-upload-btn span.vup-label{display:none;}
+    .tool-card.wide{flex-direction:column; align-items:flex-start; gap:0; padding:28px 24px 24px;}
+    .tool-card.wide .ico-wrap{margin-bottom:20px;}
+    .tool-card.wide .tag{margin:0 0 20px;}
+  }
+  @media (max-width:440px){
+    /* small phones: sticky bar keeps the logo + 5 icons (company name is already in the hero) */
+    .bar-brand > span:last-child{display:none;}
   }
 </style>
 </head>
@@ -581,6 +616,7 @@
   <symbol id="ic-chev-l" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
   <symbol id="ic-chev-r" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
   <symbol id="ic-image" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="1.5"/><circle cx="8.5" cy="10" r="1.6"/><path d="M4 17l5.5-5.5a1.6 1.6 0 0 1 2.2 0L15 14.7l1.4-1.4a1.6 1.6 0 0 1 2.2 0L21 16"/></symbol>
+  <symbol id="ic-doc" viewBox="0 0 24 24"><path d="M13.5 3.5H7A1.5 1.5 0 0 0 5.5 5v14A1.5 1.5 0 0 0 7 20.5h10a1.5 1.5 0 0 0 1.5-1.5V8.5z"/><path d="M13.5 3.5v5h5"/><path d="M8.5 12.5h7M8.5 16h7"/></symbol>
 </defs>
 </svg>
 
@@ -596,6 +632,7 @@
       <button class="bar-btn" data-tool="fms"><svg class="ico"><use href="#ic-gauge" xlink:href="#ic-gauge"/></svg><span class="bar-label">FMS</span></button>
       <button class="bar-btn" data-tool="erp"><svg class="ico"><use href="#ic-db" xlink:href="#ic-db"/></svg><span class="bar-label">ERP</span></button>
       <button class="bar-btn" data-tool="website"><svg class="ico"><use href="#ic-globe" xlink:href="#ic-globe"/></svg><span class="bar-label">Website</span></button>
+      <button class="bar-btn" data-tool="profile"><svg class="ico"><use href="#ic-doc" xlink:href="#ic-doc"/></svg><span class="bar-label">Profile</span></button>
     </div>
   </div>
 </div>
@@ -690,6 +727,17 @@
         <h3>Company Website</h3>
         <p class="tag">Profile · Projects · Contact</p>
         <div class="open-row">Visit <svg class="ico"><use href="#ic-external" xlink:href="#ic-external"/></svg></div>
+      </a>
+
+      <!-- Company Profile (PDF). The PDF sits next to index.html in the repo;
+           its file name is set once in TOOL_LINKS.profile at the bottom of this file. -->
+      <a class="tool-card wide reveal" data-tool="profile" href="javascript:void(0)">
+        <div class="ico-wrap"><svg class="ico"><use href="#ic-doc" xlink:href="#ic-doc"/></svg></div>
+        <div class="card-text">
+          <h3>Company Profile <span class="file-badge">PDF</span></h3>
+          <p class="tag">2026-27 Edition · Registrations · Projects · Plant &amp; Machinery</p>
+        </div>
+        <div class="open-row">View Profile <svg class="ico"><use href="#ic-external" xlink:href="#ic-external"/></svg></div>
       </a>
       <!-- ➕ new cards go here, right above this line -->
     </div>
@@ -805,6 +853,7 @@
         <a class="footer-link" href="tel:01452422681"><svg class="ico"><use href="#ic-phone" xlink:href="#ic-phone"/></svg>0145-2422681</a>
         <a class="footer-link" href="mailto:info@jccinfraprojects.com"><svg class="ico"><use href="#ic-mail" xlink:href="#ic-mail"/></svg>info@jccinfraprojects.com</a>
         <a class="footer-link" href="javascript:void(0)" data-tool="website"><svg class="ico"><use href="#ic-globe" xlink:href="#ic-globe"/></svg>www.jccinfraprojects.com</a>
+        <a class="footer-link" href="javascript:void(0)" data-tool="profile"><svg class="ico"><use href="#ic-doc" xlink:href="#ic-doc"/></svg>Company Profile (PDF)</a>
       </div>
       <div class="footer-col">
         <h5>Registered Office</h5>
@@ -832,7 +881,11 @@
     youtube: "https://www.youtube.com/channel/UCRs8YyDq7ha1cpfowcChkww",
     fms:     "https://jcc.credoitsolutions.com/",
     erp:     "https://jcc.nway-erp.com/",
-    website: "https://www.jccinfraprojects.com"
+    website: "https://www.jccinfraprojects.com",
+    // Company Profile PDF: upload the PDF into the repo next to index.html.
+    // The name below must match the uploaded file EXACTLY (capital/small letters too).
+    // To update the profile later, just upload the new PDF with this same name.
+    profile: "JCC_Infraprojects_Updated_Profile.pdf"
   };
   const TOOL_TOAST = {
     youtube: "YouTube link not added yet — send it over and we'll set it up right away.",
@@ -893,7 +946,7 @@
     ],
     "Gandhinagar Railway Station (NWR)": [
       "gadj1.jpeg",
-      "gadj3.jpg",
+      "gadj3.JPG",
       "laxmi.jpeg",
       "toran_dwar.jpeg"
     ],
