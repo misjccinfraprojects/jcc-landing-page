@@ -247,11 +247,40 @@
 
   /* ================= QUICK ACCESS ================= */
   #quick-access{background:var(--cream);}
-  .tool-grid{
-    display:flex;
-    flex-wrap:wrap;
-    gap:22px;
+
+  /* Quick Access slider: every card sits in ONE row; the arrows, the dots or a swipe slide it.
+     --per-view = how many cards are fully visible at once (it changes with screen width,
+     see RESPONSIVE at the bottom). New cards join the row automatically. */
+  .tool-slider{
+    position:relative;
+    display:flow-root;
+    --per-view:4;
+    --gap:22px;
+    --bleed:22px;     /* = --gap, so the next card never peeks in on desktop; must stay ≤ .wrap side padding */
+    --ctrl-h:40px;    /* height of the arrows + dots row under the cards */
+    --ctrl-gap:16px;  /* space between the cards and that row */
   }
+  .tool-grid{
+    position:relative;
+    display:flex;
+    flex-wrap:nowrap;
+    gap:var(--gap);
+    overflow-x:auto;
+    overflow-y:hidden;
+    scroll-snap-type:x mandatory;
+    scroll-behavior:smooth;
+    overscroll-behavior-x:contain;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+    /* extra room so the hover lift + shadow are not cut off; the negative margin cancels it in the layout */
+    padding:24px var(--bleed) 52px;
+    margin:-24px calc(var(--bleed) * -1) -52px;
+    scroll-padding-inline:var(--bleed);
+    /* soft fade at the left/right edges instead of a hard cut */
+    -webkit-mask-image:linear-gradient(to right, transparent 0, #000 var(--bleed), #000 calc(100% - var(--bleed)), transparent 100%);
+            mask-image:linear-gradient(to right, transparent 0, #000 var(--bleed), #000 calc(100% - var(--bleed)), transparent 100%);
+  }
+  .tool-grid::-webkit-scrollbar{display:none;}
   .tool-card{
     position:relative;
     background:var(--white);
@@ -259,8 +288,10 @@
     border-radius:6px;
     padding:28px 24px 24px;
     cursor:pointer;
-    flex:1 1 240px;
-    display:block;
+    flex:0 0 calc((100% - (var(--per-view) - 1) * var(--gap)) / var(--per-view));
+    scroll-snap-align:start;
+    display:flex;
+    flex-direction:column;
     transition:transform .25s ease, box-shadow .25s ease, border-color .25s ease;
   }
   .tool-card:hover{
@@ -294,6 +325,7 @@
   }
   .tool-card .open-row{
     display:flex; align-items:center; gap:6px;
+    margin-top:auto; /* keeps every card's action line on the same baseline */
     font-family:var(--font-mono);
     font-size:12.5px;
     font-weight:500;
@@ -304,28 +336,59 @@
   .tool-card .open-row svg{width:13px; height:13px; transition:transform .25s ease;}
   .tool-card:hover .open-row svg{transform:translate(3px,-3px);}
 
-  /* Wide card: takes a full row of its own (used for the Company Profile PDF).
-     Desktop = icon | title + tag | open link in one line. Phones = stacks like the other cards. */
-  .tool-card.wide{
-    flex-basis:100%;
-    display:flex; align-items:center; gap:22px;
-    padding:22px 26px;
+  /* Controls row under the cards:  [ ‹ ]  • • •  [ › ]
+     On wide screens (see RESPONSIVE) the two arrows move out to the sides of the cards. */
+  .slider-controls{
+    display:flex; align-items:center; justify-content:center;
+    gap:14px;
+    height:var(--ctrl-h);
+    margin-top:var(--ctrl-gap);
   }
-  .tool-card.wide .ico-wrap{margin-bottom:0; flex-shrink:0;}
-  .tool-card.wide .card-text{flex:1; min-width:0;}
-  .tool-card.wide h3{margin-bottom:6px;}
-  .tool-card.wide .tag{margin:0;}
-  .tool-card.wide .open-row{flex-shrink:0;}
-  .tool-card .file-badge{
-    font-family:var(--font-mono);
-    font-size:10.5px; font-weight:600; letter-spacing:.08em;
-    color:var(--maroon);
-    border:1px solid var(--maroon-soft);
-    border-radius:3px;
-    padding:2px 6px;
-    margin-left:8px;
-    vertical-align:middle;
+  .tool-slider.no-slide .slider-controls{display:none;}
+
+  /* Arrows: dark discs that echo the card icon tiles */
+  .slider-arrow{
+    position:relative;
+    z-index:2;
+    flex:0 0 auto;
+    width:var(--ctrl-h); height:var(--ctrl-h);
+    padding:0;
+    border-radius:50%;
+    border:1px solid rgba(231,180,174,0.3);
+    background:var(--ink);
+    color:var(--maroon-soft);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    box-shadow:0 6px 16px rgba(21,15,13,0.18);
+    transition:background .2s ease, color .2s ease, border-color .2s ease, opacity .25s ease, visibility .25s ease;
   }
+  .slider-arrow svg{width:18px; height:18px;}
+  .slider-arrow:hover{background:var(--maroon-bright); border-color:var(--maroon-bright); color:var(--white);}
+  /* first / last slide: that arrow fades (it has nowhere to go) */
+  .slider-arrow.is-off{opacity:.28; box-shadow:none; pointer-events:none;}
+
+  /* Dots: one per slide position; the long one is where you are */
+  .slider-dots{
+    position:relative; z-index:1;
+    display:flex; justify-content:center; align-items:center;
+  }
+  .slider-dots button{
+    width:20px; height:28px;
+    padding:0; border:0; background:none;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    transition:width .3s ease;
+  }
+  .slider-dots button::before{
+    content:'';
+    width:8px; height:8px;
+    border-radius:4px;
+    background:#CFC3AE;
+    transition:width .3s ease, background-color .3s ease;
+  }
+  .slider-dots button:hover::before{background:var(--maroon-bright);}
+  .slider-dots button.active{width:36px;}
+  .slider-dots button.active::before{width:26px; background:var(--maroon);}
 
   /* ================= ABOUT ================= */
   #about{background:var(--white); border-top:1px solid var(--line); border-bottom:1px solid var(--line);}
@@ -561,6 +624,24 @@
   .js .reveal.in{opacity:1; transform:translateY(0);}
 
   /* ================= RESPONSIVE ================= */
+  @media (min-width:1256px){
+    /* wide screens have room beside the cards: arrows sit on the left and right of the row,
+       level with the middle of the cards (the controls row below is --ctrl-gap + --ctrl-h tall) */
+    .slider-arrow{
+      position:absolute;
+      top:calc(50% - (var(--ctrl-gap) + var(--ctrl-h)) / 2);
+      width:46px; height:46px;
+      margin-top:-23px;
+      box-shadow:0 10px 24px rgba(21,15,13,0.22);
+    }
+    .slider-arrow svg{width:20px; height:20px;}
+    .slider-arrow.prev{left:-62px;}
+    .slider-arrow.next{right:-62px;}
+    .slider-arrow.is-off{opacity:0; visibility:hidden;}
+  }
+  @media (max-width:1100px){
+    .tool-slider{--per-view:3;}
+  }
   @media (max-width:880px){
     .about-grid{gap:44px;}
     .footer-grid{gap:30px;}
@@ -570,6 +651,7 @@
     /* 5 sticky-bar buttons with text need ~750px; below that show icons only */
     .bar-tools .bar-label{display:none;}
     .bar-btn{padding:8px 10px;}
+    .tool-slider{--per-view:2;}
   }
   @media (max-width:600px){
     header.hero{min-height:100svh; padding:92px 0 76px;}
@@ -582,9 +664,8 @@
     .bar-btn{padding:8px 10px;}
     section{padding:56px 0;}
     .video-upload-btn span.vup-label{display:none;}
-    .tool-card.wide{flex-direction:column; align-items:flex-start; gap:0; padding:28px 24px 24px;}
-    .tool-card.wide .ico-wrap{margin-bottom:20px;}
-    .tool-card.wide .tag{margin:0 0 20px;}
+    /* phones: one card at a time, with the edge of the next one peeking in */
+    .tool-slider{--per-view:1.15; --gap:14px; --bleed:20px;}
   }
   @media (max-width:440px){
     /* small phones: sticky bar keeps the logo + 5 icons (company name is already in the hero) */
@@ -689,7 +770,10 @@
       <h2>One tap, right tool open</h2>
     </div>
 
-    <div class="tool-grid">
+    <!-- Quick Access slider: all cards stay in ONE row. The arrows, the dots or a swipe (phone)
+         slide it, and it also slides by itself — see TOOL_SLIDER_AUTOPLAY_SECONDS in the script. -->
+    <div class="tool-slider" id="toolSlider" role="region" aria-roledescription="carousel" aria-label="Quick access tools">
+    <div class="tool-grid" id="toolTrack">
       <!--
         ➕ TO ADD A NEW QUICK-ACCESS CARD:
         1. Copy one whole <a class="tool-card">...</a> block below (start to end).
@@ -731,15 +815,20 @@
 
       <!-- Company Profile (PDF). The PDF sits next to index.html in the repo;
            its file name is set once in TOOL_LINKS.profile at the bottom of this file. -->
-      <a class="tool-card wide reveal" data-tool="profile" href="javascript:void(0)">
+      <a class="tool-card reveal" data-tool="profile" href="javascript:void(0)">
         <div class="ico-wrap"><svg class="ico"><use href="#ic-doc" xlink:href="#ic-doc"/></svg></div>
-        <div class="card-text">
-          <h3>Company Profile <span class="file-badge">PDF</span></h3>
-          <p class="tag">2026-27 Edition · Registrations · Projects · Plant &amp; Machinery</p>
-        </div>
-        <div class="open-row">View Profile <svg class="ico"><use href="#ic-external" xlink:href="#ic-external"/></svg></div>
+        <h3>Company Profile</h3>
+        <p class="tag">2026-27 · Projects · Registrations</p>
+        <div class="open-row">View PDF <svg class="ico"><use href="#ic-external" xlink:href="#ic-external"/></svg></div>
       </a>
       <!-- ➕ new cards go here, right above this line -->
+    </div>
+
+      <div class="slider-controls">
+        <button class="slider-arrow prev" type="button" aria-label="Previous tools"><svg class="ico"><use href="#ic-chev-l" xlink:href="#ic-chev-l"/></svg></button>
+        <div class="slider-dots" id="toolDots"></div>
+        <button class="slider-arrow next" type="button" aria-label="Next tools"><svg class="ico"><use href="#ic-chev-r" xlink:href="#ic-chev-r"/></svg></button>
+      </div>
     </div>
   </div>
 </section>
@@ -917,6 +1006,139 @@
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => t.classList.remove("show"), 2800);
   }
+
+  // ============================================================
+  // ✏️  QUICK ACCESS SLIDER
+  //     The cards slide by themselves every few seconds. They pause
+  //     while the mouse is over them or someone is touching them,
+  //     and stop once someone clicks an arrow or a card.
+  //     Change the number below to set the speed — 0 = no auto-slide.
+  // ============================================================
+  const TOOL_SLIDER_AUTOPLAY_SECONDS = 4;
+
+  (function(){
+    const slider = document.getElementById("toolSlider");
+    const track  = document.getElementById("toolTrack");
+    const dotsEl = document.getElementById("toolDots");
+    if(!slider || !track || !dotsEl) return;
+    const prevBtn = slider.querySelector(".slider-arrow.prev");
+    const nextBtn = slider.querySelector(".slider-arrow.next");
+    const reduceMotion = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+
+    let stops = [0];   // scroll position of every slide
+    let current = 0;   // slide on screen now
+    let pending = -1;  // slide we are moving to (so quick double-clicks keep going)
+
+    // One stop per card, clamped to the end of the row (the last few cards share the final stop)
+    function computeStops(){
+      const max = Math.max(0, track.scrollWidth - track.clientWidth);
+      const padL = parseFloat(getComputedStyle(track).paddingLeft) || 0;
+      const list = [];
+      track.querySelectorAll(".tool-card").forEach(card => {
+        const x = Math.min(Math.max(card.offsetLeft - padL, 0), max);
+        if(!list.length || x - list[list.length - 1] > 2) list.push(x);
+      });
+      return list.length ? list : [0];
+    }
+
+    function nearest(){
+      const x = track.scrollLeft;
+      let best = 0;
+      for(let i = 1; i < stops.length; i++){
+        if(Math.abs(stops[i] - x) < Math.abs(stops[best] - x)) best = i;
+      }
+      return best;
+    }
+
+    function renderDots(){
+      dotsEl.innerHTML = "";
+      if(stops.length < 2) return;
+      stops.forEach((_, i) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.setAttribute("aria-label", "Show slide " + (i + 1) + " of " + stops.length);
+        b.addEventListener("click", () => { goTo(i); restartAuto(); });
+        dotsEl.appendChild(b);
+      });
+    }
+
+    function updateUI(){
+      current = nearest();
+      const last = stops.length - 1;
+      const shown = pending >= 0 ? pending : current;
+      slider.classList.toggle("no-slide", last < 1);
+      prevBtn.classList.toggle("is-off", shown <= 0);
+      nextBtn.classList.toggle("is-off", shown >= last);
+      prevBtn.setAttribute("aria-disabled", shown <= 0 ? "true" : "false");
+      nextBtn.setAttribute("aria-disabled", shown >= last ? "true" : "false");
+      Array.prototype.forEach.call(dotsEl.children, (d, i) => {
+        d.classList.toggle("active", i === shown);
+        if(i === shown) d.setAttribute("aria-current", "true"); else d.removeAttribute("aria-current");
+      });
+    }
+
+    function goTo(i){
+      i = Math.max(0, Math.min(i, stops.length - 1));
+      pending = i;
+      track.scrollTo({left: stops[i], behavior: reduceMotion ? "auto" : "smooth"});
+      updateUI();
+    }
+
+    function layout(){
+      const before = stops.length;
+      stops = computeStops();
+      if(stops.length !== before || dotsEl.children.length !== (stops.length > 1 ? stops.length : 0)) renderDots();
+      updateUI();
+    }
+
+    prevBtn.addEventListener("click", () => { goTo((pending >= 0 ? pending : current) - 1); restartAuto(); });
+    nextBtn.addEventListener("click", () => { goTo((pending >= 0 ? pending : current) + 1); restartAuto(); });
+
+    let raf = 0, settleTimer;
+    track.addEventListener("scroll", () => {
+      clearTimeout(settleTimer);
+      settleTimer = setTimeout(() => { pending = -1; updateUI(); }, 160);
+      if(raf || pending >= 0) return;
+      raf = requestAnimationFrame(() => { raf = 0; updateUI(); });
+    }, {passive:true});
+
+    // ---- auto-slide ----
+    const autoMs = Math.max(0, Number(TOOL_SLIDER_AUTOPLAY_SECONDS) || 0) * 1000;
+    let autoTimer = null, touchTimer;
+    let hovering = false, focused = false, touching = false, inView = true;
+
+    function tick(){
+      if(hovering || focused || touching || !inView || document.hidden || stops.length < 2) return;
+      const at = pending >= 0 ? pending : current;
+      goTo(at >= stops.length - 1 ? 0 : at + 1);
+    }
+    function restartAuto(){
+      if(!autoMs || reduceMotion) return;
+      clearInterval(autoTimer);
+      autoTimer = setInterval(tick, autoMs);
+    }
+
+    slider.addEventListener("mouseenter", () => { hovering = true; });
+    slider.addEventListener("mouseleave", () => { hovering = false; restartAuto(); });
+    slider.addEventListener("focusin", () => { focused = true; });
+    slider.addEventListener("focusout", (e) => {
+      if(!slider.contains(e.relatedTarget)){ focused = false; restartAuto(); }
+    });
+    track.addEventListener("touchstart", () => { touching = true; clearTimeout(touchTimer); }, {passive:true});
+    track.addEventListener("touchend", () => {
+      clearTimeout(touchTimer);
+      touchTimer = setTimeout(() => { touching = false; restartAuto(); }, 6000);
+    }, {passive:true});
+    if("IntersectionObserver" in window){
+      new IntersectionObserver(entries => { inView = entries[0].isIntersecting; }, {threshold:0.4}).observe(slider);
+    }
+
+    let resizeTimer;
+    window.addEventListener("resize", () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(layout, 120); });
+    window.addEventListener("load", layout);
+    layout();
+    restartAuto();
+  })();
 
   // ============================================================
   // ✏️  PROJECT PHOTO GALLERIES — add photos for any project by
