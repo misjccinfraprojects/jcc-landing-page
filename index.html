@@ -499,6 +499,13 @@
 
   /* ================= PROJECTS STRIP ================= */
   #projects{background:var(--dark-grad); color:var(--white);}
+  /* Completed Projects strip: same look as the strip above. Its gradient runs the other way
+     so the two dark strips meet without a hard colour edge. */
+  #completed-projects{
+    background:linear-gradient(20deg, var(--ink) 0%, var(--maroon-deep) 85%);
+    color:var(--white);
+    border-top:1px solid rgba(231,180,174,0.14);
+  }
   .chip-row{display:flex; flex-wrap:wrap; gap:12px; margin-top:28px;}
   .chip{
     font-family:var(--font-mono);
@@ -564,6 +571,7 @@
   .pgallery-stage{position:relative; display:flex; align-items:center; justify-content:center; background:#000; min-height:340px;}
   .pgallery-image-wrap{width:100%; height:clamp(300px, 60vh, 560px); display:flex; align-items:center; justify-content:center;}
   .pgallery-image-wrap img{max-width:100%; max-height:100%; object-fit:contain; display:block;}
+  .pgallery-image-wrap video{max-width:100%; max-height:100%; display:block; background:#000;}
   .pgallery-empty{color:rgba(255,255,255,0.55); text-align:center; padding:32px; font-family:var(--font-mono); font-size:13px; line-height:1.7; max-width:360px;}
   .pgallery-empty svg{width:34px; height:34px; margin-bottom:14px; opacity:.5;}
   .pgallery-nav{
@@ -980,6 +988,24 @@
   </div>
 </section>
 
+<!-- ============ COMPLETED PROJECTS STRIP ============ -->
+<!-- Works exactly like the strip above: each chip opens its photo gallery.
+     To add or rename a project: copy one <button class="chip"> line, change BOTH the
+     data-project="..." and the visible name, then add the same name in PROJECT_GALLERIES
+     (script at the bottom) with its photo / video file names. -->
+<section id="completed-projects">
+  <div class="wrap">
+    <div class="eyebrow on-dark reveal">Completed Projects</div>
+    <p class="reveal" style="font-family:var(--font-mono); font-size:12px; color:rgba(255,255,255,0.45); margin:10px 0 0;">Select a project to view its permanent photo gallery</p>
+    <div class="chip-row reveal">
+      <button class="chip" type="button" data-project="Samruddhi Mahamarg">Samruddhi Mahamarg <svg class="ico"><use href="#ic-image" xlink:href="#ic-image"/></svg></button>
+      <button class="chip" type="button" data-project="Kathuwas-Narnaul Doubling">Kathuwas-Narnaul Doubling <svg class="ico"><use href="#ic-image" xlink:href="#ic-image"/></svg></button>
+      <button class="chip" type="button" data-project="ROB Neem ka Thana">ROB Neem ka Thana <svg class="ico"><use href="#ic-image" xlink:href="#ic-image"/></svg></button>
+      <button class="chip" type="button" data-project="JLN Hospital, Ajmer">JLN Hospital, Ajmer <svg class="ico"><use href="#ic-image" xlink:href="#ic-image"/></svg></button>
+    </div>
+  </div>
+</section>
+
 <!-- ============ PROJECT GALLERY MODAL ============ -->
 <div class="pgallery-overlay" id="pgalleryOverlay">
   <div class="pgallery-modal">
@@ -1351,7 +1377,19 @@
       "fob2.jpeg",
       "fob3.jpeg",
       "fob4.jpeg"
-    ]
+    ],
+
+    // ---------- COMPLETED PROJECTS (chips in the "Completed Projects" strip) ----------
+    // Put each project's photo / video file names inside its [ ], with a comma between them,
+    // e.g.  "samruddhi1.jpeg", "samruddhi2.jpeg", "samruddhi_drone.mp4"
+    "Samruddhi Mahamarg": [
+    ],
+    "Kathuwas-Narnaul Doubling": [
+    ],
+    "ROB Neem ka Thana": [
+    ],
+    "JLN Hospital, Ajmer": [
+    ],
     // "ROB Raniwara": [
     //   "project-photos/rob-raniwara-1.jpg",
     //   "project-photos/rob-raniwara-2.jpg"
@@ -1392,10 +1430,26 @@
         return;
       }
       if(index >= images.length) index = images.length - 1;
-      const img = document.createElement("img");
-      img.src = images[index];
-      img.alt = titleEl.textContent;
-      imageWrap.appendChild(img);
+      const src = images[index];
+      if(/\.(mp4|webm|ogg|ogv|mov|m4v)(\?.*)?$/i.test(src)){
+        // video files (e.g. drone_shoot.mp4) play inside the gallery
+        const vid = document.createElement("video");
+        vid.src = src;
+        vid.controls = true;
+        vid.muted = true;               // starts muted so it can play by itself; use the speaker button for sound
+        vid.defaultMuted = true;
+        vid.setAttribute("muted", "");
+        vid.autoplay = true;
+        vid.loop = true;
+        vid.playsInline = true;
+        vid.setAttribute("aria-label", titleEl.textContent + " video");
+        imageWrap.appendChild(vid);
+      } else {
+        const img = document.createElement("img");
+        img.src = src;
+        img.alt = titleEl.textContent;
+        imageWrap.appendChild(img);
+      }
       countEl.textContent = (index + 1) + " / " + images.length;
       const multi = images.length > 1;
       prevBtn.style.display = multi ? "flex" : "none";
@@ -1414,6 +1468,7 @@
     function closeGallery(){
       overlay.classList.remove("open");
       document.body.style.overflow = "";
+      imageWrap.querySelectorAll("video").forEach(v => v.pause()); // stop a playing video when the gallery closes
     }
     function next(){ const n = currentImages().length; if(n){ index = (index + 1) % n; render(); } }
     function prev(){ const n = currentImages().length; if(n){ index = (index - 1 + n) % n; render(); } }
@@ -1432,6 +1487,7 @@
     document.addEventListener("keydown", (e) => {
       if(!overlay.classList.contains("open")) return;
       if(e.key === "Escape") closeGallery();
+      if(e.target && e.target.tagName === "VIDEO") return; // arrow keys on a video seek the video instead
       if(e.key === "ArrowRight") next();
       if(e.key === "ArrowLeft") prev();
     });
