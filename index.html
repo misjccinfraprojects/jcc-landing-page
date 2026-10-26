@@ -497,15 +497,65 @@
   .sector-item .stxt strong{display:block; font-family:var(--font-display); font-weight:600; font-size:15.5px;}
   .sector-item .stxt span{font-size:13px; color:#7a6f68; line-height:1.5;}
 
-  /* ================= PROJECTS STRIP ================= */
-  #projects{background:var(--dark-grad); color:var(--white);}
-  /* Completed Projects strip: same look as the strip above. Its gradient runs the other way
-     so the two dark strips meet without a hard colour edge. */
-  #completed-projects{
-    background:linear-gradient(20deg, var(--ink) 0%, var(--maroon-deep) 85%);
-    color:var(--white);
-    border-top:1px solid rgba(231,180,174,0.14);
+  /* ================= PROJECTS (two cards) =================
+     Current projects  = dark card with a "live" badge.
+     Completed projects = light card, chips carry a tick.
+     Both cards sit on a soft beige band so they read as two separate blocks. */
+  #projects, #completed-projects{background:var(--cream-dim);}
+  #projects{padding-bottom:14px;}
+  #completed-projects{padding-top:14px;}
+  .proj-panel{
+    position:relative;
+    border-radius:12px;
+    padding:30px 34px 34px;
   }
+  .proj-panel.is-current{
+    background:var(--dark-grad);
+    color:var(--white);
+    border:1px solid rgba(62,7,10,0.55);
+    box-shadow:0 22px 44px rgba(21,15,13,0.20);
+  }
+  .proj-panel.is-completed{
+    background:var(--white);
+    color:var(--text);
+    border:1px solid var(--line);
+    box-shadow:0 12px 30px rgba(21,15,13,0.07);
+  }
+  .proj-head{display:flex; align-items:center; gap:18px;}
+  .proj-head .eyebrow{flex:1; min-width:0;}
+  .proj-sub{font-family:var(--font-mono); font-size:12px; margin:10px 0 0;}
+  .is-current .proj-sub{color:rgba(255,255,255,0.5);}
+  .is-completed .proj-sub{color:#7a6f68;}
+
+  /* status badge at the right of each card title: "● 5 Ongoing" / "✓ 4 Completed" */
+  .proj-badge{
+    flex-shrink:0;
+    display:inline-flex; align-items:center; gap:8px;
+    font-family:var(--font-mono);
+    font-size:11.5px; font-weight:500;
+    letter-spacing:.08em; text-transform:uppercase;
+    padding:6px 13px;
+    border-radius:30px;
+  }
+  .is-current .proj-badge{color:var(--white); background:rgba(179,31,35,0.25); border:1px solid rgba(231,180,174,0.35);}
+  .is-completed .proj-badge{color:var(--maroon); background:var(--cream); border:1px solid var(--line);}
+  .live-dot{
+    width:7px; height:7px; border-radius:50%;
+    background:#F2545B;
+    animation:live-pulse 2s ease-out infinite;
+  }
+  @keyframes live-pulse{
+    0%{box-shadow:0 0 0 0 rgba(242,84,91,0.6);}
+    70%{box-shadow:0 0 0 7px rgba(242,84,91,0);}
+    100%{box-shadow:0 0 0 0 rgba(242,84,91,0);}
+  }
+  .done-check{
+    width:9px; height:5px;
+    border-left:1.8px solid currentColor;
+    border-bottom:1.8px solid currentColor;
+    transform:translateY(-1px) rotate(-45deg);
+  }
+
   .chip-row{display:flex; flex-wrap:wrap; gap:12px; margin-top:28px;}
   .chip{
     font-family:var(--font-mono);
@@ -523,6 +573,18 @@
   .chip::before{content:''; width:6px; height:6px; border-radius:50%; background:var(--maroon-bright); flex-shrink:0;}
   .chip:hover{background:rgba(231,180,174,0.12); border-color:var(--maroon-soft); transform:translateY(-2px);}
   .chip .ico{width:12px; height:12px; opacity:.7;}
+  /* chips on the light "Completed" card: dark text, and a tick instead of the red dot */
+  .is-completed .chip{color:var(--text); border-color:var(--line); background:var(--cream);}
+  .is-completed .chip:hover{color:var(--maroon); border-color:var(--maroon); background:var(--white);}
+  .is-completed .chip .ico{opacity:.55;}
+  .is-completed .chip::before{
+    width:8px; height:4px;
+    border-radius:0;
+    background:none;
+    border-left:1.6px solid var(--maroon);
+    border-bottom:1.6px solid var(--maroon);
+    transform:translateY(-1px) rotate(-45deg);
+  }
 
   /* ================= PROJECT GALLERY MODAL ================= */
   .pgallery-overlay{
@@ -734,6 +796,10 @@
     .bar-btn{padding:8px 10px;}
     section{padding:56px 0;}
     .video-upload-btn span.vup-label{display:none;}
+    /* project cards on phones: a little less padding, badge drops under the title */
+    .proj-panel{padding:24px 20px 26px; border-radius:10px;}
+    .proj-head{flex-wrap:wrap; gap:12px;}
+    .proj-head .eyebrow{flex-basis:100%;}
     /* phones: one card at a time, with the edge of the next one peeking in */
     .tool-slider{--per-view:1.15; --gap:14px; --bleed:20px;}
   }
@@ -971,12 +1037,16 @@
   </div>
 </section>
 
-<!-- ============ PROJECTS STRIP ============ -->
+<!-- ============ CURRENT PROJECTS (dark card) ============ -->
 <section id="projects">
   <div class="wrap">
-    <div class="eyebrow on-dark reveal">Current On-Site Projects</div>
-    <p class="reveal" style="font-family:var(--font-mono); font-size:12px; color:rgba(255,255,255,0.45); margin:10px 0 0;">Select a project to view its permanent photo gallery</p>
-    <div class="chip-row reveal">
+    <div class="proj-panel is-current reveal">
+    <div class="proj-head">
+      <div class="eyebrow on-dark">Current On-Site Projects</div>
+      <span class="proj-badge"><span class="live-dot"></span><span><span class="proj-count"></span> Ongoing</span></span>
+    </div>
+    <p class="proj-sub">Select a project to view its permanent photo gallery</p>
+    <div class="chip-row">
       <button class="chip" type="button" data-project="Bharatpur Elevated Flyover">Bharatpur Elevated Flyover <svg class="ico"><use href="#ic-image" xlink:href="#ic-image"/></svg></button>
       <button class="chip" type="button" data-project="Gandhinagar Railway Station (NWR)">Gandhinagar Railway Station (NWR) <svg class="ico"><use href="#ic-image" xlink:href="#ic-image"/></svg></button>
       <button class="chip" type="button" data-project="B2 Byepass">B2 Byepass <svg class="ico"><use href="#ic-image" xlink:href="#ic-image"/></svg></button>
@@ -985,23 +1055,30 @@
       <!-- <button class="chip" type="button" data-project="ROB Raniwara">ROB Raniwara <svg class="ico"><use href="#ic-image" xlink:href="#ic-image"/></svg></button> -->
       <!-- <button class="chip" type="button" data-project="Kathuwas–Narnaul Doubling">Kathuwas–Narnaul Doubling <svg class="ico"><use href="#ic-image" xlink:href="#ic-image"/></svg></button> -->
     </div>
+    </div>
   </div>
 </section>
 
-<!-- ============ COMPLETED PROJECTS STRIP ============ -->
-<!-- Works exactly like the strip above: each chip opens its photo gallery.
+<!-- ============ COMPLETED PROJECTS (light card) ============ -->
+<!-- Works exactly like the card above: each chip opens its photo gallery.
      To add or rename a project: copy one <button class="chip"> line, change BOTH the
      data-project="..." and the visible name, then add the same name in PROJECT_GALLERIES
-     (script at the bottom) with its photo / video file names. -->
+     (script at the bottom) with its photo / video file names.
+     The project count in the badge updates by itself. -->
 <section id="completed-projects">
   <div class="wrap">
-    <div class="eyebrow on-dark reveal">Completed Projects</div>
-    <p class="reveal" style="font-family:var(--font-mono); font-size:12px; color:rgba(255,255,255,0.45); margin:10px 0 0;">Select a project to view its permanent photo gallery</p>
-    <div class="chip-row reveal">
+    <div class="proj-panel is-completed reveal">
+    <div class="proj-head">
+      <div class="eyebrow on-paper">Completed Projects</div>
+      <span class="proj-badge"><span class="done-check"></span><span><span class="proj-count"></span> Completed</span></span>
+    </div>
+    <p class="proj-sub">Select a project to view its permanent photo gallery</p>
+    <div class="chip-row">
       <button class="chip" type="button" data-project="Samruddhi Mahamarg">Samruddhi Mahamarg <svg class="ico"><use href="#ic-image" xlink:href="#ic-image"/></svg></button>
       <button class="chip" type="button" data-project="Kathuwas-Narnaul Doubling">Kathuwas-Narnaul Doubling <svg class="ico"><use href="#ic-image" xlink:href="#ic-image"/></svg></button>
       <button class="chip" type="button" data-project="ROB Neem ka Thana">ROB Neem ka Thana <svg class="ico"><use href="#ic-image" xlink:href="#ic-image"/></svg></button>
       <button class="chip" type="button" data-project="JLN Hospital, Ajmer">JLN Hospital, Ajmer <svg class="ico"><use href="#ic-image" xlink:href="#ic-image"/></svg></button>
+    </div>
     </div>
   </div>
 </section>
@@ -1492,6 +1569,12 @@
       if(e.key === "ArrowLeft") prev();
     });
   })();
+
+  // project count in the badge of each project card ("5 Ongoing", "4 Completed") — counts the chips by itself
+  document.querySelectorAll(".proj-panel").forEach(panel => {
+    const countEl = panel.querySelector(".proj-count");
+    if(countEl) countEl.textContent = panel.querySelectorAll(".chip[data-project]").length;
+  });
 
   // ============================================================
   // HEADER PHOTO SLIDESHOW — PERMANENT IMAGE PATHS
