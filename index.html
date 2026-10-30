@@ -1047,15 +1047,12 @@
     </div>
     <p class="proj-sub">Select a project to view its permanent photo gallery</p>
     <div class="chip-row">
-      <button class="chip" type="button" data-project="Bharatpur Elevated Flyover">Bharatpur Elevated Flyover <svg class="ico"><use href="#ic-image" xlink:href="#ic-image"/></svg></button>
-      <button class="chip" type="button" data-project="Gandhinagar Railway Station (NWR)">Gandhinagar Railway Station (NWR) <svg class="ico"><use href="#ic-image" xlink:href="#ic-image"/></svg></button>
-      <button class="chip" type="button" data-project="B2 Byepass">B2 Byepass <svg class="ico"><use href="#ic-image" xlink:href="#ic-image"/></svg></button>
-      <button class="chip" type="button" data-project="Toran Dwar">Toran Dwar <svg class="ico"><use href="#ic-image" xlink:href="#ic-image"/></svg></button>
-      <button class="chip" type="button" data-project="Laxmi Mandir">Laxmi Mandir <svg class="ico"><use href="#ic-image" xlink:href="#ic-image"/></svg></button>
-      <button class="chip" type="button" data-project="Patrika Gate">Patrika Gate <svg class="ico"><use href="#ic-image" xlink:href="#ic-image"/></svg></button>
-      <button class="chip" type="button" data-project="Footover Bridge">Footover Bridge <svg class="ico"><use href="#ic-image" xlink:href="#ic-image"/></svg></button>
-      <!-- <button class="chip" type="button" data-project="ROB Raniwara">ROB Raniwara <svg class="ico"><use href="#ic-image" xlink:href="#ic-image"/></svg></button> -->
-      <!-- <button class="chip" type="button" data-project="Kathuwas–Narnaul Doubling">Kathuwas–Narnaul Doubling <svg class="ico"><use href="#ic-image" xlink:href="#ic-image"/></svg></button> -->
+      <button class="chip" type="button" data-project="Bharatpur">Bharatpur <svg class="ico"><use href="#ic-image" xlink:href="#ic-image"/></svg></button>
+      <button class="chip" type="button" data-project="Gandhinagar">Gandhinagar <svg class="ico"><use href="#ic-image" xlink:href="#ic-image"/></svg></button>
+      <button class="chip" type="button" data-project="Parbhani">Parbhani <svg class="ico"><use href="#ic-image" xlink:href="#ic-image"/></svg></button>
+      <button class="chip" type="button" data-project="Foot Over Bridge">Foot Over Bridge <svg class="ico"><use href="#ic-image" xlink:href="#ic-image"/></svg></button>
+      <button class="chip" type="button" data-project="Manesar">Manesar <svg class="ico"><use href="#ic-image" xlink:href="#ic-image"/></svg></button>
+      <button class="chip" type="button" data-project="Raniwara - Jalore">Raniwara - Jalore <svg class="ico"><use href="#ic-image" xlink:href="#ic-image"/></svg></button>
     </div>
     </div>
   </div>
@@ -1076,10 +1073,13 @@
     </div>
     <p class="proj-sub">Select a project to view its permanent photo gallery</p>
     <div class="chip-row">
+      <button class="chip" type="button" data-project="Nanol">Nanol <svg class="ico"><use href="#ic-image" xlink:href="#ic-image"/></svg></button>
+      <button class="chip" type="button" data-project="Laxmi Mandir Underpass">Laxmi Mandir Underpass <svg class="ico"><use href="#ic-image" xlink:href="#ic-image"/></svg></button>
+      <button class="chip" type="button" data-project="Toran Dwar">Toran Dwar <svg class="ico"><use href="#ic-image" xlink:href="#ic-image"/></svg></button>
+      <button class="chip" type="button" data-project="B2 Byepass">B2 Byepass <svg class="ico"><use href="#ic-image" xlink:href="#ic-image"/></svg></button>
+      <button class="chip" type="button" data-project="Patrika Gate">Patrika Gate <svg class="ico"><use href="#ic-image" xlink:href="#ic-image"/></svg></button>
       <button class="chip" type="button" data-project="Kota">Kota <svg class="ico"><use href="#ic-image" xlink:href="#ic-image"/></svg></button>
-      <button class="chip" type="button" data-project="Kathuwas-Narnaul Doubling">Kathuwas-Narnaul Doubling <svg class="ico"><use href="#ic-image" xlink:href="#ic-image"/></svg></button>
-      <button class="chip" type="button" data-project="ROB Neem ka Thana">ROB Neem ka Thana <svg class="ico"><use href="#ic-image" xlink:href="#ic-image"/></svg></button>
-      <button class="chip" type="button" data-project="JLN Hospital, Ajmer">JLN Hospital, Ajmer <svg class="ico"><use href="#ic-image" xlink:href="#ic-image"/></svg></button>
+      <button class="chip" type="button" data-project="JLN Hospital">JLN Hospital <svg class="ico"><use href="#ic-image" xlink:href="#ic-image"/></svg></button>
     </div>
     </div>
   </div>
@@ -1421,21 +1421,23 @@
   // local folders for security reasons)
   // ============================================================
   const PROJECT_GALLERIES = {
-    // Add permanent image paths here. Put your photos inside the project-photos folder.
-    // Example: "photos/project-name/photo-1.jpg"
-    "Bharatpur Elevated Flyover": [
+    // Photos / videos for every project chip. The name before the colon must match the chip's
+    // data-project="..." exactly. Format:   "Project Name": [ "photo1.jpg", "photo2.jpg" ],
+    // Upload the files to GitHub (same folder as index.html) and write their names here.
+
+    // ---------- CURRENT ON-SITE PROJECTS ----------
+    "Bharatpur": [
       "btp4.jpeg",
       "btp5.jpeg",
       "btp6.jpeg",
       "btp7.jpeg",
       "btp8.jpeg",
       "btp10.jpeg",
-       "btp.jpeg"
-      // "project-photos/bharatpur-elevated-flyover-2.jpg"
+      "btp.jpeg"
     ],
-    "Gandhinagar Railway Station (NWR)": [
+    "Gandhinagar": [
       "gadj1.jpeg",
-      "gadj3.JPG", 
+      "gadj3.JPG",
       "gadj11.jpg",
       "gadj14.jpg",
       "gadj20.jpg",
@@ -1457,50 +1459,44 @@
       "gadj44.jpg",
       "WhatsApp Image 2026-06-26 at 17.42.12.jpeg"
     ],
+    "Parbhani": [
+    ],
+    "Foot Over Bridge": [
+      "fob1.jpeg",
+      "fob2.jpeg",
+      "fob3.jpeg",
+      "fob4.jpeg"
+    ],
+    "Manesar": [
+    ],
+    "Raniwara - Jalore": [
+    ],
+
+    // ---------- COMPLETED PROJECTS ----------
+    "Nanol": [
+    ],
+    "Laxmi Mandir Underpass": [
+      "laxmi.jpeg"
+    ],
+    "Toran Dwar": [
+      "toran_dwar.jpeg"
+    ],
     "B2 Byepass": [
       "b2.JPG",
       "b2_night.jpeg",
       "WhatsApp Image 2026-09-15 at 10.28.48.jpeg",
       "drone_shoot.mp4"
     ],
-    "Laxmi Mandir": [
-      "laxmi.jpeg"
-    ],
-    "Toran Dwar": [
-      "toran_dwar.jpeg"
-    ],
     "Patrika Gate": [
       "Patrika Gate.jpeg"
     ],
-    "Footover Bridge": [
-      "fob1.jpeg",
-      "fob2.jpeg",
-      "fob3.jpeg",
-      "fob4.jpeg"
-    ],
-
-    // ---------- COMPLETED PROJECTS (chips in the "Completed Projects" strip) ----------
-    // Put each project's photo / video file names inside its [ ], with a comma between them,
-    // e.g.  "samruddhi1.jpeg", "samruddhi2.jpeg", "samruddhi_drone.mp4"
     "Kota": [
       "kota1.jpeg",
       "kota2.jpeg",
       "kota3.jpeg"
     ],
-    "Kathuwas-Narnaul Doubling": [
-    ],
-    "ROB Neem ka Thana": [
-    ],
-    "JLN Hospital, Ajmer": [
-    ],
-    // "ROB Raniwara": [
-    //   "project-photos/rob-raniwara-1.jpg",
-    //   "project-photos/rob-raniwara-2.jpg"
-    // ],
-    // "Kathuwas–Narnaul Doubling": [
-    //   "project-photos/kathuwas-narnaul-doubling-1.jpg",
-    //   "project-photos/kathuwas-narnaul-doubling-2.jpg"
-    // ]
+    "JLN Hospital": [
+    ]
   };
 
   (function(){
