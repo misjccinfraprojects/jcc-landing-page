@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JCC Meeting MoM &amp; Action Tracker</title>
+<style>
+  :root{
+    --navy:#1a3a6b; --navy2:#24497f; --ink:#172031; --muted:#64748b;
+    --line:#d7deea; --line2:#9aa6b8; --bg:#f4f6fb; --card:#ffffff;
+    --soft:#eef2f8; --ok:#1a7f4b; --warn:#c47a00; --danger:#b4232a; --accent:#1a3a6b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Segoe UI",Roboto,Arial,sans-serif;font-size:14px;line-height:1.5}
+  header.app{background:linear-gradient(180deg,var(--navy),var(--navy2));color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .brand{font-weight:700;font-size:17px;letter-spacing:.3px}
+  .brand small{font-weight:400;opacity:.8;font-size:12px;display:block}
+  .tabs{display:flex;gap:6px;flex-wrap:wrap}
+  .tabs button{background:rgba(255,255,255,.12);color:#fff;border:0;padding:8px 14px;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600}
+  .tabs button.active{background:#fff;color:var(--navy)}
+  main{max-width:960px;margin:0 auto;padding:18px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin-bottom:16px;box-shadow:0 1px 2px rgba(20,40,80,.04)}
+  h2.sec{font-size:14px;color:var(--navy);margin:0 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+  h2.sec .star{color:var(--warn)}
+  label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin:0 0 3px}
+  input[type=text],input[type=date],input[type=time],select,textarea{width:100%;padding:8px 10px;border:1px solid var(--line2);border-radius:7px;font-size:13.5px;font-family:inherit;background:#fff;color:var(--ink)}
+  textarea{resize:vertical;min-height:70px}
+  .grid{display:grid;gap:10px}
+  .g2{grid-template-columns:1fr 1fr}
+  .g3{grid-template-columns:1fr 1fr 1fr}
+  @media(max-width:680px){.g2,.g3{grid-template-columns:1fr}}
+  .rowline{display:flex;gap:8px;align-items:flex-start;margin-bottom:8px}
+  .rowline .num{flex:0 0 22px;text-align:center;padding-top:8px;color:var(--muted);font-weight:700}
+  .rowline .del{flex:0 0 auto;background:#fff;border:1px solid var(--line2);color:var(--danger);border-radius:6px;cursor:pointer;padding:7px 10px;font-weight:700;line-height:1}
+  .ai-grid{display:grid;grid-template-columns:1fr 150px 130px 130px 36px;gap:8px;align-items:center}
+  .ai-head{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+  .cm-grid{display:grid;grid-template-columns:1fr 140px 1fr 120px 36px;gap:8px;align-items:center}
+  @media(max-width:680px){
+    .ai-grid,.cm-grid{grid-template-columns:1fr;gap:4px;border:1px solid var(--line);border-radius:8px;padding:8px;margin-bottom:8px}
+    .ai-grid .ai-head{display:none}
+  }
+  .btn{background:var(--navy);color:#fff;border:0;padding:10px 16px;border-radius:8px;cursor:pointer;font-size:13.5px;font-weight:600}
+  .btn:hover{background:var(--navy2)}
+  .btn.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  .btn.add{background:var(--soft);color:var(--navy);font-weight:600;padding:7px 12px;font-size:12.5px}
+  .btn.ok{background:var(--ok)}
+  .btn.big{padding:13px 22px;font-size:15px}
+  .btnrow{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .ai-box{background:#f7f9fd;border:1px dashed var(--line2);border-radius:9px;padding:12px}
+  .pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700}
+  .st-Open{background:#eef2f8;color:var(--navy)}
+  .st-InProgress{background:#fff6e5;color:var(--warn)}
+  .st-Done{background:#e7f6ee;color:var(--ok)}
+  .st-OnHold{background:#fdeaea;color:var(--danger)}
+  .muted{color:var(--muted);font-size:12.5px}
+  .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#172031;color:#fff;padding:10px 18px;border-radius:9px;font-size:13px;opacity:0;transition:.25s;z-index:50;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+  .toast.show{opacity:1}
+  .status-chip{font-size:11px;color:var(--muted)}
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px}
+  .dot.on{background:var(--ok)}.dot.off{background:#c9ced8}
+
+  /* report */
+  .report{background:#fff}
+  .rep-head{border-bottom:2px solid var(--navy);padding-bottom:10px;margin-bottom:12px}
+  .rep-company{font-size:17px;font-weight:700;color:var(--navy)}
+  .rep-company span{font-weight:400;color:var(--muted);font-size:12px}
+  .rep-title{font-size:15px;font-weight:700;margin-top:6px}
+  table.rep{width:100%;border-collapse:collapse;margin:6px 0}
+  table.rep td,table.rep th{border:1px solid var(--line2);padding:6px 9px;vertical-align:top;font-size:12.5px}
+  table.rep th{background:var(--soft);text-align:left;font-weight:600}
+  table.meta td:first-child{width:30%;background:#f6f8fc;font-weight:600}
+  .rep ol{margin:4px 0;padding-left:20px}.rep ol li{margin:4px 0}
+  .rep h3{font-size:13px;color:var(--navy);margin:14px 0 4px}
+  .signrow{display:flex;justify-content:space-between;margin-top:26px}
+  .signrow div{width:45%;border-top:1px solid #333;padding-top:4px;text-align:center;font-size:12px}
+
+  /* log */
+  .logitem{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px;flex-wrap:wrap}
+  .logitem .meta2{font-size:12px;color:var(--muted)}
+  .badge{background:var(--soft);color:var(--navy);border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700}
+  .open-badge{background:#fff6e5;color:var(--warn)}
+  .hide{display:none}
+
+  @media print{
+    body{background:#fff}
+    header.app,.tabs,.noprint,.toast{display:none !important}
+    main{padding:0;max-width:none}
+    .card{border:0;box-shadow:none;padding:0;margin:0}
+    .report{padding:0}
+  }
+</style>
+</head>
+<body>
+<header class="app">
+  <div class="brand">JCC Infraprojects <small>Meeting MoM &amp; Action Tracker</small></div>
+  <div class="tabs">
+    <button id="tab-entry" class="active" onclick="go('entry')">New Meeting</button>
+    <button id="tab-report" onclick="go('report')">Report</button>
+    <button id="tab-log" onclick="go('log')">Meeting Log</button>
+  </div>
+</header>
+
+<main>
+  <!-- ============ ENTRY VIEW ============ -->
+  <div id="view-entry">
+    <div class="card">
+      <h2 class="sec">Meeting Details</h2>
+      <div class="grid g2">
+        <div>
+          <label>Project / Site</label>
+          <select id="f-project"></select>
+        </div>
+        <div id="f-project-other-wrap" class="hide">
+          <label>Project name (type)</label>
+          <input type="text" id="f-project-other" placeholder="Enter project / site name">
+        </div>
+      </div>
+      <div class="grid g3" style="margin-top:10px">
+        <div><label>Meeting Subject</label><input type="text" id="f-subject" placeholder="e.g. Monthly Project Review"></div>
+        <div><label>Date</label><input type="date" id="f-date"></div>
+        <div><label>Time</label><input type="text" id="f-time" placeholder="e.g. 11:00 – 12:30"></div>
+      </div>
+      <div class="grid g3" style="margin-top:10px">
+        <div><label>Venue / Mode</label><input type="text" id="f-venue" placeholder="Site office / Online"></div>
+        <div><label>Chaired by</label><input type="text" id="f-chair" placeholder="Director / PM name"></div>
+        <div><label>MoM prepared by</label><input type="text" id="f-prep" placeholder="Your name"></div>
+      </div>
+      <div style="margin-top:10px">
+        <label>Attendees — Present</label><input type="text" id="f-present" placeholder="Comma separated names">
+      </div>
+    </div>
+
+    <div class="card" id="ai-card">
+      <h2 class="sec">Quick AI Fill <span class="muted" style="font-weight:400">(optional)</span></h2>
+      <div class="ai-box">
+        <label>Rough notes — paste or type what was discussed, and the AI will split it into points, decisions &amp; action items</label>
+        <textarea id="ai-raw" placeholder="Type or paste whatever was discussed... e.g. Pile cap work is behind schedule, Ravi to complete it by the 25th. Steel order is pending; decided to procure from JSW..."></textarea>
+        <div class="btnrow" style="margin-top:8px">
+          <button class="btn" id="ai-btn" onclick="aiFill()">✨ AI se points banao</button>
+          <span id="ai-status" class="status-chip"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="sec">1. Points Discussed</h2>
+      <div id="list-discussion"></div>
+      <button class="btn add" onclick="addRow('discussion')">+ Add point</button>
+    </div>
+
+    <div class="card">
+      <h2 class="sec">2. Decisions Taken</h2>
+      <div id="list-decisions"></div>
+      <button class="btn add" onclick="addRow('decisions')">+ Add decision</button>
+    </div>
+
+    <div class="card">
+      <h2 class="sec">3. Action Items — Follow-up Checklist <span class="star">★</span></h2>
+      <div class="ai-grid ai-head" style="margin-bottom:6px">
+        <div>Action Point</div><div>Owner</div><div>Target Date</div><div>Status</div><div></div>
+      </div>
+      <div id="list-actions"></div>
+      <button class="btn add" onclick="addAction()">+ Add action item</button>
+    </div>
+
+    <div class="card">
+      <h2 class="sec">4. Owner Comments / Follow-up</h2>
+      <div class="cm-grid ai-head" style="margin-bottom:6px">
+        <div>Point</div><div>Owner</div><div>Comments received from owner</div><div>Status</div><div></div>
+      </div>
+      <div id="list-comments"></div>
+      <button class="btn add" onclick="addComment()">+ Add point</button>
+    </div>
+
+    <div class="card">
+      <h2 class="sec">5. Pending / Carried Forward</h2>
+      <div id="list-pending"></div>
+      <button class="btn add" onclick="addRow('pending')">+ Add pending point</button>
+    </div>
+
+    <div class="card">
+      <h2 class="sec">6. Next Meeting</h2>
+      <div class="grid g3">
+        <div><label>Date</label><input type="date" id="f-next-date"></div>
+        <div><label>Time</label><input type="text" id="f-next-time" placeholder="e.g. 11:00"></div>
+        <div><label>Venue / Mode</label><input type="text" id="f-next-venue" placeholder="Site office / Online"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="btnrow">
+        <button class="btn big ok" onclick="endMeeting()">✅ End Meeting → Generate Report</button>
+        <button class="btn ghost" onclick="newMeeting()">➕ New blank meeting</button>
+        <span class="status-chip"><span id="save-dot" class="dot off"></span><span id="save-txt">draft auto-saves</span></span>
+      </div>
+      <div class="muted" style="margin-top:8px">Your data stays in the form even after "End Meeting" — use "Back to edit" to come back and change it, and pressing End Meeting again updates the same report (no duplicate is created). To start a completely new meeting, press "New blank meeting".</div>
+    </div>
+  </div>
+
+  <!-- ============ REPORT VIEW ============ -->
+  <div id="view-report" class="hide">
+    <div class="card noprint">
+      <div class="btnrow">
+        <button class="btn" onclick="window.print()">🖨 Print / Save PDF</button>
+        <button class="btn ghost" onclick="downloadCSV()">⬇ Action items (CSV)</button>
+        <button class="btn ghost" onclick="copySummary()">📋 Copy summary</button>
+        <button class="btn ghost" onclick="go('entry')">← Back to edit</button>
+        <span id="rep-saved" class="status-chip"></span>
+      </div>
+    </div>
+    <div class="card report" id="report-body"></div>
+  </div>
+
+  <!-- ============ LOG VIEW ============ -->
+  <div id="view-log" class="hide">
+    <div class="card">
+      <h2 class="sec">Meeting Log</h2>
+      <div class="grid g2">
+        <div>
+          <label>Filter by project</label>
+          <select id="log-filter" onchange="renderLog()"></select>
+        </div>
+        <div style="display:flex;align-items:flex-end;gap:8px">
+          <button class="btn ghost" onclick="downloadLogCSV()">⬇ Export all action items (CSV)</button>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h2 class="sec">Open Action Items (carry-forward)</h2>
+      <div id="open-actions"></div>
+    </div>
+    <div class="card">
+      <h2 class="sec">Saved Meetings</h2>
+      <div id="log-list"></div>
+    </div>
+  </div>
+</main>
+
+<div id="toast" class="toast"></div>
+
+<script>
+"use strict";
+/* ---------------- config ---------------- */
+var PROJECTS = [
+  "BTP Elevated Flyover (Bharatpur)",
+  "Bharatpur Flyover (PMS)",
+  "Jalore ROB (LC-114, SH-11)",
+  "JNE Pkg-04 (Parbhani)",
+  "Amritsar Station Redevelopment",
+  "Pilibanga ROB",
+  "Ambaji Mega/Major Bridges",
+  "Gandhinagar (Jaipur) Station",
+  "— Other (type) —"
+];
+var STATUSES = ["Open","In Progress","Done","On Hold"];
+var LS_DRAFT="jcc_mom_draft_v1", LS_MEET="jcc_mom_meetings_v1";
+
+/* ---------------- state ---------------- */
+var draft = blankDraft();
+var meetings = [];
+var currentReport = null;
+var DB=null, DL=null, SAMPLE=null;
+
+function blankDraft(){
+  return {id:"", project:PROJECTS[0], projectOther:"", subject:"", date:today(), time:"", venue:"", chair:"", prep:"",
+    present:"", discussion:[""], decisions:[""],
+    actions:[{text:"",owner:"",target:"",status:"Open"}],
+    comments:[{text:"",owner:"",comment:"",status:"Open"}],
+    pending:[""], nextDate:"", nextTime:"", nextVenue:""};
+}
+function today(){var d=new Date();var o=d.getTimezoneOffset();var l=new Date(d.getTime()-o*60000);return l.toISOString().slice(0,10);}
+function uid(){return 'm'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+function esc(s){return (s==null?"":String(s)).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function projName(d){return d.project.indexOf("Other")>=0 ? (d.projectOther||"(unnamed project)") : d.project;}
+function stClass(s){return 'st-'+String(s).replace(/\s/g,'');}
+
+/* ---------------- toast ---------------- */
+var toastT;
+function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(function(){t.classList.remove('show');},2200);}
+
+/* ---------------- nav ---------------- */
+function go(view){
+  ['entry','report','log'].forEach(function(v){
+    document.getElementById('view-'+v).classList.toggle('hide', v!==view);
+    document.getElementById('tab-'+v).classList.toggle('active', v===view);
+  });
+  if(view==='log'){ renderLog(); }
+  window.scrollTo(0,0);
+}
+
+/* ---------------- project dropdown ---------------- */
+function buildProjects(){
+  var sel=document.getElementById('f-project');
+  sel.innerHTML=PROJECTS.map(function(p){return '<option>'+esc(p)+'</option>';}).join('');
+  sel.value=draft.project;
+  sel.onchange=function(){draft.project=sel.value;toggleOther();save();};
+  document.getElementById('f-project-other').value=draft.projectOther||"";
+  document.getElementById('f-project-other').oninput=function(e){draft.projectOther=e.target.value;save();};
+  toggleOther();
+  var lf=document.getElementById('log-filter');
+  lf.innerHTML='<option value="__all">All projects</option>'+PROJECTS.filter(function(p){return p.indexOf("Other")<0;}).map(function(p){return '<option>'+esc(p)+'</option>';}).join('');
+}
+function toggleOther(){document.getElementById('f-project-other-wrap').classList.toggle('hide', draft.project.indexOf("Other")<0);}
+
+/* ---------------- simple fields ---------------- */
+var FIELDS=[['f-subject','subject'],['f-date','date'],['f-time','time'],['f-venue','venue'],['f-chair','chair'],['f-prep','prep'],['f-present','present'],['f-next-date','nextDate'],['f-next-time','nextTime'],['f-next-venue','nextVenue']];
+function bindFields(){
+  FIELDS.forEach(function(p){
+    var el=document.getElementById(p[0]); if(!el)return;
+    el.value=draft[p[1]]||"";
+    el.oninput=function(){draft[p[1]]=el.value;save();};
+  });
+}
+
+/* ---------------- simple lists ---------------- */
+function renderList(name){
+  var box=document.getElementById('list-'+name);
+  var arr=draft[name];
+  box.innerHTML='';
+  arr.forEach(function(val,i){
+    var row=document.createElement('div');row.className='rowline';
+    row.innerHTML='<div class="num">'+(i+1)+'</div><input type="text" placeholder="..."><button class="del" title="Remove">✕</button>';
+    var inp=row.querySelector('input');inp.value=val;
+    inp.oninput=function(){draft[name][i]=inp.value;save();};
+    row.querySelector('.del').onclick=function(){draft[name].splice(i,1);if(draft[name].length===0)draft[name].push("");renderList(name);save();};
+    box.appendChild(row);
+  });
+}
+function addRow(name){draft[name].push("");renderList(name);var box=document.getElementById('list-'+name);var ins=box.querySelectorAll('input');if(ins.length)ins[ins.length-1].focus();}
+
+/* ---------------- action items ---------------- */
+function renderActions(){
+  var box=document.getElementById('list-actions');box.innerHTML='';
+  draft.actions.forEach(function(a,i){
+    var row=document.createElement('div');row.className='ai-grid';row.style.marginBottom='8px';
+    var opts=STATUSES.map(function(s){return '<option'+(s===a.status?' selected':'')+'>'+s+'</option>';}).join('');
+    row.innerHTML='<input type="text" class="ai-text" placeholder="What needs to be done"><input type="text" class="ai-owner" placeholder="Owner"><input type="date" class="ai-target"><select class="ai-status">'+opts+'</select><button class="del" title="Remove">✕</button>';
+    row.querySelector('.ai-text').value=a.text;
+    row.querySelector('.ai-owner').value=a.owner;
+    row.querySelector('.ai-target').value=a.target;
+    row.querySelector('.ai-text').oninput=function(e){draft.actions[i].text=e.target.value;save();};
+    row.querySelector('.ai-owner').oninput=function(e){draft.actions[i].owner=e.target.value;save();};
+    row.querySelector('.ai-target').oninput=function(e){draft.actions[i].target=e.target.value;save();};
+    row.querySelector('.ai-status').onchange=function(e){draft.actions[i].status=e.target.value;save();};
+    row.querySelector('.del').onclick=function(){draft.actions.splice(i,1);if(draft.actions.length===0)draft.actions.push({text:"",owner:"",target:"",status:"Open"});renderActions();save();};
+    box.appendChild(row);
+  });
+}
+function addAction(){draft.actions.push({text:"",owner:"",target:"",status:"Open"});renderActions();var r=document.querySelectorAll('#list-actions .ai-text');if(r.length)r[r.length-1].focus();}
+
+/* ---------------- owner comments / follow-up ---------------- */
+function renderComments(){
+  var box=document.getElementById('list-comments');box.innerHTML='';
+  draft.comments.forEach(function(a,i){
+    var row=document.createElement('div');row.className='cm-grid';row.style.marginBottom='8px';
+    var opts=STATUSES.map(function(s){return '<option'+(s===a.status?' selected':'')+'>'+s+'</option>';}).join('');
+    row.innerHTML='<input type="text" class="cm-text" placeholder="Point"><input type="text" class="cm-owner" placeholder="Owner"><input type="text" class="cm-comment" placeholder="Comments received from owner"><select class="cm-status">'+opts+'</select><button class="del" title="Remove">✕</button>';
+    row.querySelector('.cm-text').value=a.text;
+    row.querySelector('.cm-owner').value=a.owner;
+    row.querySelector('.cm-comment').value=a.comment;
+    row.querySelector('.cm-text').oninput=function(e){draft.comments[i].text=e.target.value;save();};
+    row.querySelector('.cm-owner').oninput=function(e){draft.comments[i].owner=e.target.value;save();};
+    row.querySelector('.cm-comment').oninput=function(e){draft.comments[i].comment=e.target.value;save();};
+    row.querySelector('.cm-status').onchange=function(e){draft.comments[i].status=e.target.value;save();};
+    row.querySelector('.del').onclick=function(){draft.comments.splice(i,1);if(draft.comments.length===0)draft.comments.push({text:"",owner:"",comment:"",status:"Open"});renderComments();save();};
+    box.appendChild(row);
+  });
+}
+function addComment(){draft.comments.push({text:"",owner:"",comment:"",status:"Open"});renderComments();var r=document.querySelectorAll('#list-comments .cm-text');if(r.length)r[r.length-1].focus();}
+
+/* ---------------- persistence (local) ---------------- */
+var saveT;
+function save(){
+  clearTimeout(saveT);
+  saveT=setTimeout(function(){
+    try{localStorage.setItem(LS_DRAFT,JSON.stringify(draft));}catch(e){}
+    var dot=document.getElementById('save-dot'),txt=document.getElementById('save-txt');
+    if(dot){dot.className='dot on';txt.textContent='draft saved';setTimeout(function(){dot.className='dot off';txt.textContent='draft auto-saves';},1200);}
+  },400);
+}
+function loadDraft(){try{var d=localStorage.getItem(LS_DRAFT);if(d){draft=Object.assign(blankDraft(),JSON.parse(d));
+  if(!Array.isArray(draft.comments)||!draft.comments.length)draft.comments=[{text:"",owner:"",comment:"",status:"Open"}];}}catch(e){}}
+function loadMeetings(){try{var m=localStorage.getItem(LS_MEET);if(m)meetings=JSON.parse(m)||[];}catch(e){}}
+function saveMeetingsLocal(){try{localStorage.setItem(LS_MEET,JSON.stringify(meetings));}catch(e){}}
+
+function newMeeting(){
+  if(!confirm("Start a new blank meeting? (if you have already generated the report, it is safely saved in the Log)"))return;
+  draft=blankDraft();renderAll();save();go('entry');toast("New meeting form ready");
+}
+function renderAll(){buildProjects();bindFields();renderList('discussion');renderList('decisions');renderActions();renderComments();renderList('pending');}
+
+/* ---------------- AI fill (sample) ---------------- */
+async function aiFill(){
+  var raw=document.getElementById('ai-raw').value.trim();
+  var st=document.getElementById('ai-status');
+  if(!raw){toast("Please enter the rough notes first");return;}
+  if(!SAMPLE){ try{SAMPLE=await claude.use("sample");}catch(e){SAMPLE=null;} }
+  if(!SAMPLE){st.textContent="AI is not available here — please fill in manually.";return;}
+  var btn=document.getElementById('ai-btn');btn.disabled=true;st.textContent="Thinking…";
+  var prompt='You are structuring raw meeting notes from a civil construction project review meeting into Minutes of Meeting. '+
+    'The notes may be in Hindi, English or Hinglish. Read them and return ONLY valid JSON (no markdown, no commentary) with this exact shape: '+
+    '{"discussion":["..."],"decisions":["..."],"actions":[{"text":"what to do","owner":"person responsible or empty","target":"YYYY-MM-DD or empty"}],"pending":["..."]}. '+
+    'Keep each point short and clear, in the same language style as the notes. If a date like "25 tareekh" is given without month, use the nearest sensible upcoming date in YYYY-MM-DD; if unsure leave target empty. '+
+    'Notes:\n'+raw;
+  try{
+    var res=await SAMPLE(prompt,{modelTier:"default"});
+    var txt=(res&&res.text)||"";
+    var jsonStr=txt.replace(/```json/gi,'').replace(/```/g,'').trim();
+    var a=jsonStr.indexOf('{'),b=jsonStr.lastIndexOf('}');
+    if(a>=0&&b>a)jsonStr=jsonStr.slice(a,b+1);
+    var data=JSON.parse(jsonStr);
+    applyAI(data);
+    st.textContent="✓ Points filled in — please review.";
+    toast("AI has filled in the points");
+  }catch(e){
+    st.textContent="AI could not parse the notes — try again or fill in manually.";
+  }
+  btn.disabled=false;
+}
+function applyAI(data){
+  function clean(a){return (Array.isArray(a)?a:[]).map(function(x){return String(x).trim();}).filter(Boolean);}
+  var d=clean(data.discussion), dec=clean(data.decisions), pen=clean(data.pending);
+  if(d.length)draft.discussion=mergeNonEmpty(draft.discussion,d);
+  if(dec.length)draft.decisions=mergeNonEmpty(draft.decisions,dec);
+  if(pen.length)draft.pending=mergeNonEmpty(draft.pending,pen);
+  if(Array.isArray(data.actions)){
+    var acts=data.actions.map(function(x){return {text:String(x.text||"").trim(),owner:String(x.owner||"").trim(),target:String(x.target||"").trim(),status:"Open"};}).filter(function(x){return x.text;});
+    if(acts.length){
+      var existing=draft.actions.filter(function(x){return x.text.trim();});
+      draft.actions=existing.concat(acts);
+      if(draft.actions.length===0)draft.actions.push({text:"",owner:"",target:"",status:"Open"});
+    }
+  }
+  renderAll();save();
+}
+function mergeNonEmpty(cur,add){var base=cur.filter(function(x){return x&&x.trim();});base=base.concat(add);return base.length?base:[""];}
+
+/* ---------------- end meeting -> report (update-or-insert, keeps draft) ---------------- */
+function endMeeting(){
+  if(!draft.id)draft.id=uid();
+  var m={
+    id:draft.id, project:projName(draft), subject:draft.subject, date:draft.date, time:draft.time,
+    venue:draft.venue, chair:draft.chair, prep:draft.prep, present:draft.present,
+    discussion:draft.discussion.filter(nz), decisions:draft.decisions.filter(nz),
+    actions:draft.actions.filter(function(a){return a.text&&a.text.trim();}),
+    comments:draft.comments.filter(function(a){return (a.text&&a.text.trim())||(a.comment&&a.comment.trim());}),
+    pending:draft.pending.filter(nz),
+    nextDate:draft.nextDate, nextTime:draft.nextTime, nextVenue:draft.nextVenue,
+    createdAt:(function(){var ex=meetings.find(function(x){return x.id===draft.id;});return ex?ex.createdAt:new Date().toISOString();})(),
+    updatedAt:new Date().toISOString()
+  };
+  var idx=meetings.findIndex(function(x){return x.id===m.id;});
+  if(idx>=0)meetings[idx]=m; else meetings.unshift(m);
+  currentReport=m;
+  saveMeetingsLocal();
+  saveToDB(m);
+  try{localStorage.setItem(LS_DRAFT,JSON.stringify(draft));}catch(e){}  // keep draft intact
+  renderReport(m);
+  go('report');
+  toast(idx>=0?"Report updated":"Report generated & saved to log");
+}
+function nz(x){return x&&x.trim();}
+
+/* ---------------- render report ---------------- */
+function renderReport(m){
+  var body=document.getElementById('report-body');
+  if(!m){body.innerHTML='<p class="muted">No report yet. Fill in a meeting under "New Meeting" and press End Meeting.</p>';return;}
+  function olist(arr){return arr.length?'<ol>'+arr.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ol>':'<p class="muted">—</p>';}
+  var actRows=m.actions.length? m.actions.map(function(a,i){
+    return '<tr><td>'+(i+1)+'</td><td>'+esc(a.text)+'</td><td>'+esc(a.owner||'—')+'</td><td>'+esc(a.target||'—')+'</td><td><span class="pill '+stClass(a.status)+'">'+esc(a.status)+'</span></td></tr>';
+  }).join('') : '<tr><td colspan="5" class="muted">No action items</td></tr>';
+  var cm=m.comments||[];
+  var cmSection = cm.length ? ('<h3>4. Owner Comments / Follow-up</h3><table class="rep"><tr><th>S.No</th><th>Point</th><th>Owner</th><th>Comments received from owner</th><th>Status</th></tr>'+
+    cm.map(function(a,i){return '<tr><td>'+(i+1)+'</td><td>'+esc(a.text||'—')+'</td><td>'+esc(a.owner||'—')+'</td><td>'+esc(a.comment||'—')+'</td><td><span class="pill '+stClass(a.status)+'">'+esc(a.status)+'</span></td></tr>';}).join('')+'</table>') : '';
+  body.innerHTML=
+    '<div class="rep-head">'+
+      '<div class="rep-company">JCC INFRAPROJECTS PVT. LTD. <span>| Ajmer, Rajasthan</span></div>'+
+      '<div class="rep-title">Minutes of Meeting — '+esc(m.project)+'</div>'+
+      '<div class="muted">'+esc(m.subject||'Project Review Meeting')+'</div>'+
+    '</div>'+
+    '<table class="rep meta">'+
+      '<tr><td>Date</td><td>'+esc(m.date||'—')+(m.time?('&nbsp; ('+esc(m.time)+')'):'')+'</td></tr>'+
+      '<tr><td>Venue / Mode</td><td>'+esc(m.venue||'—')+'</td></tr>'+
+      '<tr><td>Chaired by</td><td>'+esc(m.chair||'—')+'</td></tr>'+
+      '<tr><td>Prepared by</td><td>'+esc(m.prep||'—')+'</td></tr>'+
+      '<tr><td>Present</td><td>'+esc(m.present||'—')+'</td></tr>'+
+    '</table>'+
+    '<h3>1. Points Discussed</h3>'+olist(m.discussion)+
+    '<h3>2. Decisions Taken</h3>'+olist(m.decisions)+
+    '<h3>3. Action Items — Follow-up Checklist</h3>'+
+    '<table class="rep"><tr><th>S.No</th><th>Action Point</th><th>Owner</th><th>Target Date</th><th>Status</th></tr>'+actRows+'</table>'+
+    cmSection+
+    (m.pending.length?('<h3>5. Pending / Carried Forward</h3>'+olist(m.pending)):'')+
+    (m.nextDate||m.nextTime||m.nextVenue?('<h3>6. Next Meeting</h3><table class="rep meta"><tr><td>Date</td><td>'+esc(m.nextDate||'—')+'</td></tr><tr><td>Time</td><td>'+esc(m.nextTime||'—')+'</td></tr><tr><td>Venue / Mode</td><td>'+esc(m.nextVenue||'—')+'</td></tr></table>'):'')+
+    '<div class="signrow"><div>Chaired by</div><div>Prepared by</div></div>';
+  document.getElementById('rep-saved').textContent='Saved to log • '+new Date(m.updatedAt||m.createdAt).toLocaleString();
+}
+
+/* ---------------- CSV / copy ---------------- */
+function csvCell(s){s=(s==null?"":String(s));return '"'+s.replace(/"/g,'""')+'"';}
+function actionsCSV(list,withProject){
+  var head=(withProject?['Project','Meeting Date']:[]).concat(['S.No','Action Point','Owner','Target Date','Status']);
+  var rows=[head.map(csvCell).join(',')];
+  var n=0;
+  list.forEach(function(m){
+    (m.actions||[]).forEach(function(a){n++;var base=withProject?[m.project,m.date]:[];rows.push(base.concat([n,a.text,a.owner,a.target,a.status]).map(csvCell).join(','));});
+  });
+  return rows.join('\r\n');
+}
+async function offerDownload(filename,text){
+  if(!DL){try{DL=await claude.use("downloads");}catch(e){DL=null;}}
+  if(DL){try{await DL.save({filename:filename,data:text});return;}catch(e){}}
+  try{var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(text);a.download=filename;document.body.appendChild(a);a.click();a.remove();}catch(e){toast("Download was blocked");}
+}
+function downloadCSV(){if(!currentReport)return;offerDownload('ActionItems_'+currentReport.project.replace(/\W+/g,'_')+'_'+currentReport.date+'.csv',actionsCSV([currentReport],false));}
+function downloadLogCSV(){var list=filteredMeetings();if(!list.length){toast("No meetings yet");return;}offerDownload('ActionItems_Log.csv',actionsCSV(list,true));}
+function copySummary(){
+  if(!currentReport)return;var m=currentReport;
+  var L=[];
+  L.push('MINUTES OF MEETING — '+m.project);
+  L.push((m.subject||'Project Review Meeting')+' | '+m.date+(m.time?(' '+m.time):''));
+  if(m.chair)L.push('Chaired by: '+m.chair);
+  L.push('');L.push('DISCUSSED:');m.discussion.forEach(function(x,i){L.push(' '+(i+1)+'. '+x);});
+  L.push('');L.push('DECISIONS:');m.decisions.forEach(function(x,i){L.push(' '+(i+1)+'. '+x);});
+  L.push('');L.push('ACTION ITEMS:');m.actions.forEach(function(a,i){L.push(' '+(i+1)+'. '+a.text+' — '+(a.owner||'?')+' — by '+(a.target||'?')+' ['+a.status+']');});
+  if((m.comments||[]).length){L.push('');L.push('OWNER COMMENTS / FOLLOW-UP:');m.comments.forEach(function(a,i){L.push(' '+(i+1)+'. '+(a.text||'')+' — '+(a.owner||'?')+' — '+(a.comment||'')+' ['+a.status+']');});}
+  if(m.pending.length){L.push('');L.push('PENDING:');m.pending.forEach(function(x,i){L.push(' '+(i+1)+'. '+x);});}
+  var txt=L.join('\n');
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(function(){toast("Summary copied");},function(){fallbackCopy(txt);});}
+  else fallbackCopy(txt);
+}
+function fallbackCopy(txt){var t=document.createElement('textarea');t.value=txt;document.body.appendChild(t);t.select();try{document.execCommand('copy');toast("Summary copied");}catch(e){toast("Copy failed");}t.remove();}
+
+/* ---------------- log ---------------- */
+function filteredMeetings(){var f=document.getElementById('log-filter').value;return f==='__all'?meetings:meetings.filter(function(m){return m.project===f;});}
+function renderLog(){
+  var list=filteredMeetings();
+  var box=document.getElementById('log-list');
+  if(!list.length){box.innerHTML='<p class="muted">No meetings saved yet.</p>';}
+  else{
+    box.innerHTML=list.map(function(m){
+      var open=(m.actions||[]).filter(function(a){return a.status!=='Done';}).length;
+      return '<div class="logitem"><div><b>'+esc(m.project)+'</b> <span class="meta2">'+esc(m.date)+(m.subject?(' • '+esc(m.subject)):'')+'</span><br>'+
+        '<span class="badge">'+(m.actions||[]).length+' actions</span> '+(open?'<span class="badge open-badge">'+open+' open</span>':'<span class="badge">all done</span>')+'</div>'+
+        '<div class="btnrow"><button class="btn ghost" onclick="editMeeting(\''+m.id+'\')">Edit</button><button class="btn ghost" onclick="openReport(\''+m.id+'\')">View / Print</button></div></div>';
+    }).join('');
+  }
+  var oa=document.getElementById('open-actions');
+  var rows=[];
+  list.forEach(function(m){(m.actions||[]).forEach(function(a){if(a.status!=='Done')rows.push({m:m,a:a});});});
+  if(!rows.length){oa.innerHTML='<p class="muted">No open actions — all clear! ✅</p>';}
+  else{
+    rows.sort(function(x,y){return (x.a.target||'9999')<(y.a.target||'9999')?-1:1;});
+    var todayS=today();
+    oa.innerHTML='<table class="rep"><tr><th>Action</th><th>Owner</th><th>Target</th><th>Project</th><th>Status</th></tr>'+
+      rows.map(function(r){var overdue=r.a.target&&r.a.target<todayS;return '<tr><td>'+esc(r.a.text)+'</td><td>'+esc(r.a.owner||'—')+'</td><td>'+(overdue?'<b style="color:#b4232a">'+esc(r.a.target)+' ❗</b>':esc(r.a.target||'—'))+'</td><td class="muted">'+esc(r.m.project)+'</td><td><span class="pill '+stClass(r.a.status)+'">'+esc(r.a.status)+'</span></td></tr>';}).join('')+'</table>';
+  }
+}
+function openReport(id){var m=meetings.find(function(x){return x.id===id;});if(!m)return;currentReport=m;renderReport(m);go('report');}
+function editMeeting(id){
+  var m=meetings.find(function(x){return x.id===id;});if(!m)return;
+  draft={id:m.id, project:matchProject(m.project), projectOther:(PROJECTS.indexOf(m.project)<0?m.project:""),
+    subject:m.subject||"", date:m.date||today(), time:m.time||"", venue:m.venue||"", chair:m.chair||"", prep:m.prep||"",
+    present:m.present||"",
+    discussion:(m.discussion&&m.discussion.length?m.discussion.slice():[""]),
+    decisions:(m.decisions&&m.decisions.length?m.decisions.slice():[""]),
+    actions:(m.actions&&m.actions.length?m.actions.map(function(a){return Object.assign({},a);}):[{text:"",owner:"",target:"",status:"Open"}]),
+    comments:(m.comments&&m.comments.length?m.comments.map(function(a){return Object.assign({},a);}):[{text:"",owner:"",comment:"",status:"Open"}]),
+    pending:(m.pending&&m.pending.length?m.pending.slice():[""]),
+    nextDate:m.nextDate||"", nextTime:m.nextTime||"", nextVenue:m.nextVenue||""};
+  renderAll();save();go('entry');toast("Edit mode — make changes and press End Meeting again");
+}
+function matchProject(name){return PROJECTS.indexOf(name)>=0?name:"— Other (type) —";}
+
+/* ---------------- DB (shared, best-effort) ---------------- */
+async function initDB(){
+  try{DB=await claude.use("db");}catch(e){DB=null;}
+  if(!DB)return;
+  try{
+    DB.collection("meetings").orderBy("createdAt","desc").onSnapshot(function(snap){
+      var remote=[];snap.forEach(function(doc){var v=doc.data();if(v&&v.id)remote.push(v);});
+      var map={};meetings.forEach(function(m){map[m.id]=m;});remote.forEach(function(m){map[m.id]=m;});
+      meetings=Object.keys(map).map(function(k){return map[k];}).sort(function(a,b){return (a.createdAt<b.createdAt)?1:-1;});
+      saveMeetingsLocal();
+      if(!document.getElementById('view-log').classList.contains('hide'))renderLog();
+    });
+  }catch(e){}
+}
+async function saveToDB(m){
+  if(!DB){try{DB=await claude.use("db");}catch(e){DB=null;}}
+  if(!DB)return;
+  try{await DB.doc("meetings/"+m.id).set(m);}catch(e){}
+}
+
+/* ---------------- boot ---------------- */
+function boot(){
+  loadDraft();loadMeetings();renderAll();renderReport(currentReport);
+  document.getElementById('f-date').value=draft.date||today();
+  // AI fill only works on the Claude platform; hide it when self-hosted (e.g. GitHub Pages)
+  if(!(window.claude&&window.claude.use)){var ac=document.getElementById('ai-card');if(ac)ac.style.display='none';}
+}
+boot();
+if(window.claude&&claude.use){ initDB(); claude.use("sample").then(function(s){SAMPLE=s;}).catch(function(){}); }
+</script>
+</body>
+</html>
