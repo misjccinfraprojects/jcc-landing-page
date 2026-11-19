@@ -139,7 +139,7 @@
         <label>Rough notes — paste or type what was discussed, and the AI will split it into points, decisions &amp; action items</label>
         <textarea id="ai-raw" placeholder="Type or paste whatever was discussed... e.g. Pile cap work is behind schedule, Ravi to complete it by the 25th. Steel order is pending; decided to procure from JSW..."></textarea>
         <div class="btnrow" style="margin-top:8px">
-          <button class="btn" id="ai-btn" onclick="aiFill()">✨ AI se points banao</button>
+          <button class="btn" id="ai-btn" onclick="aiFill()">✨ Generate points with AI</button>
           <span id="ai-status" class="status-chip"></span>
         </div>
       </div>
@@ -258,7 +258,7 @@ var PROJECTS = [
 var STATUSES = ["Open","In Progress","Done","On Hold"];
 var LS_DRAFT="jcc_mom_draft_v1", LS_MEET="jcc_mom_meetings_v1";
 // ====== AI on GitHub Pages: paste your deployed Apps Script /exec URL between the quotes below ======
-var AI_PROXY_URL = "https://script.google.com/macros/s/AKfycbzYTdMt44T27_z4F-k2_wxmtV47YLIAf4rcDYZaSvTxuBTcCvwWokIALSLUD9rBUYd7cA/exec";
+var AI_PROXY_URL = "";
 
 /* ---------------- state ---------------- */
 var draft = blankDraft();
@@ -431,13 +431,16 @@ async function aiFillViaProxy(raw){
   btn.disabled=true; st.textContent="Thinking…";
   try{
     var r=await fetch(AI_PROXY_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({notes:raw})});
-    var data=await r.json();
-    if(data&&data.error){throw new Error(data.error);}
+    var textResp=await r.text();
+    var data;
+    try{ data=JSON.parse(textResp); }
+    catch(pe){ throw new Error("Endpoint did not return JSON (HTTP "+r.status+"). Set the Web app access to \"Anyone\" and check the /exec URL."); }
+    if(data&&data.error){ throw new Error(data.error+(data.detail?(" — "+String(data.detail).slice(0,160)):"")); }
     applyAI(data);
     st.textContent="✓ Points filled in — please review.";
     toast("AI has filled in the points");
   }catch(e){
-    st.textContent="AI could not process the notes — check the Apps Script URL/key, or fill in manually.";
+    st.textContent="AI error: "+((e&&e.message)?e.message:e);
   }
   btn.disabled=false;
 }
