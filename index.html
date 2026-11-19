@@ -841,6 +841,7 @@
   <symbol id="ic-form" viewBox="0 0 24 24"><path d="M9 5H6.5A1.5 1.5 0 0 0 5 6.5v13A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-13A1.5 1.5 0 0 0 17.5 5H15"/><rect x="9" y="3.5" width="6" height="3" rx="1"/><path d="M8.5 11h7M8.5 14.5h7M8.5 18h4"/></symbol>
   <symbol id="ic-image" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="1.5"/><circle cx="8.5" cy="10" r="1.6"/><path d="M4 17l5.5-5.5a1.6 1.6 0 0 1 2.2 0L15 14.7l1.4-1.4a1.6 1.6 0 0 1 2.2 0L21 16"/></symbol>
   <symbol id="ic-doc" viewBox="0 0 24 24"><path d="M13.5 3.5H7A1.5 1.5 0 0 0 5.5 5v14A1.5 1.5 0 0 0 7 20.5h10a1.5 1.5 0 0 0 1.5-1.5V8.5z"/><path d="M13.5 3.5v5h5"/><path d="M8.5 12.5h7M8.5 16h7"/></symbol>
+  <symbol id="ic-wallet" viewBox="0 0 24 24"><path d="M3.5 8V6.5A1.5 1.5 0 0 1 5 5h11.5"/><path d="M3.5 8v9.5A1.5 1.5 0 0 0 5 19h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1H5A1.5 1.5 0 0 1 3.5 8z"/><path d="M15.5 14h2"/></symbol>
 </defs>
 </svg>
 
@@ -994,6 +995,14 @@
         <div class="ico-wrap"><svg class="ico"><use href="#ic-doc" xlink:href="#ic-doc"/></svg></div>
         <h3>Meeting MoM Tracker</h3>
         <p class="tag">Minutes · Decisions · Action Follow-up</p>
+        <div class="open-row">Open <svg class="ico"><use href="#ic-external" xlink:href="#ic-external"/></svg></div>
+      </a>
+
+      <!-- Expense Management System — standalone tool, file sits next to index.html. Link in TOOL_LINKS.expense -->
+      <a class="tool-card reveal" data-tool="expense" href="javascript:void(0)">
+        <div class="ico-wrap"><svg class="ico"><use href="#ic-wallet" xlink:href="#ic-wallet"/></svg></div>
+        <h3>Expense Management</h3>
+        <p class="tag">HO &amp; Site Expenses · Advances · Reports</p>
         <div class="open-row">Open <svg class="ico"><use href="#ic-external" xlink:href="#ic-external"/></svg></div>
       </a>
 
@@ -1190,7 +1199,8 @@
     // To update the profile later, just upload the new PDF with this same name.
     profile: "JCC_Infraprojects_Updated_Profile.pdf",
     btppms:  "https://script.google.com/macros/s/AKfycbwf91DE5cgNBtKvPX-Lm2ka5j2S4qa3yLDQ6T21-malwVDlBcDA8gs-8pAQoMnXXie5/exec",
-    mom:     "mom-tracker.html"
+    mom:     "mom-tracker.html",
+    expense: "expense-management-system.html"
   };
 
   // ============================================================
