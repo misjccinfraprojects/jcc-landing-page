@@ -254,6 +254,8 @@ var PROJECTS = [
 ];
 var STATUSES = ["Open","In Progress","Done","On Hold"];
 var LS_DRAFT="jcc_mom_draft_v1", LS_MEET="jcc_mom_meetings_v1";
+// ====== AI on GitHub Pages: paste your deployed Apps Script /exec URL between the quotes below ======
+var AI_PROXY_URL = "https://script.google.com/macros/s/AKfycbzYTdMt44T27_z4F-k2_wxmtV47YLIAf4rcDYZaSvTxuBTcCvwWokIALSLUD9rBUYd7cA/exec";
 
 /* ---------------- state ---------------- */
 var draft = blankDraft();
@@ -395,7 +397,10 @@ async function aiFill(){
   var st=document.getElementById('ai-status');
   if(!raw){toast("Please enter the rough notes first");return;}
   if(!SAMPLE){ try{SAMPLE=await claude.use("sample");}catch(e){SAMPLE=null;} }
-  if(!SAMPLE){st.textContent="AI is not available here — please fill in manually.";return;}
+  if(!SAMPLE){
+    if(typeof AI_PROXY_URL==='string'&&AI_PROXY_URL.indexOf('http')===0){ await aiFillViaProxy(raw); return; }
+    st.textContent="AI is not available here — please fill in manually.";return;
+  }
   var btn=document.getElementById('ai-btn');btn.disabled=true;st.textContent="Thinking…";
   var prompt='You are structuring raw meeting notes from a civil construction project review meeting into Minutes of Meeting. '+
     'The notes may be in Hindi, English or Hinglish. Read them and return ONLY valid JSON (no markdown, no commentary) with this exact shape: '+
@@ -414,6 +419,22 @@ async function aiFill(){
     toast("AI has filled in the points");
   }catch(e){
     st.textContent="AI could not parse the notes — try again or fill in manually.";
+  }
+  btn.disabled=false;
+}
+/* AI via Google Apps Script + Gemini (used when self-hosted on GitHub Pages) */
+async function aiFillViaProxy(raw){
+  var st=document.getElementById('ai-status'), btn=document.getElementById('ai-btn');
+  btn.disabled=true; st.textContent="Thinking…";
+  try{
+    var r=await fetch(AI_PROXY_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({notes:raw})});
+    var data=await r.json();
+    if(data&&data.error){throw new Error(data.error);}
+    applyAI(data);
+    st.textContent="✓ Points filled in — please review.";
+    toast("AI has filled in the points");
+  }catch(e){
+    st.textContent="AI could not process the notes — check the Apps Script URL/key, or fill in manually.";
   }
   btn.disabled=false;
 }
@@ -596,8 +617,9 @@ async function saveToDB(m){
 function boot(){
   loadDraft();loadMeetings();renderAll();renderReport(currentReport);
   document.getElementById('f-date').value=draft.date||today();
-  // AI fill only works on the Claude platform; hide it when self-hosted (e.g. GitHub Pages)
-  if(!(window.claude&&window.claude.use)){var ac=document.getElementById('ai-card');if(ac)ac.style.display='none';}
+  // AI fill works on Claude, or on GitHub Pages when an Apps Script proxy URL is set. Hide it only when neither is available.
+  var hasProxy=(typeof AI_PROXY_URL==='string'&&AI_PROXY_URL.indexOf('http')===0);
+  if(!(window.claude&&window.claude.use)&&!hasProxy){var ac=document.getElementById('ai-card');if(ac)ac.style.display='none';}
 }
 boot();
 if(window.claude&&claude.use){ initDB(); claude.use("sample").then(function(s){SAMPLE=s;}).catch(function(){}); }
