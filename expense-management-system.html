@@ -307,24 +307,32 @@ function ymLabel(ym){const [y,m]=ym.split('-');return new Date(+y,+m-1,1).toLoca
 function floatScopeOf(name){const p=DB.people.find(x=>x.name===name);return (p&&p.floatSite)?p.floatSite:"all";}
 function floatStartOf(name){const p=DB.people.find(x=>x.name===name);return (p&&p.allowanceStart)?p.allowanceStart:curYM();}
 function scopeLabel(sc){return sc==="self"?"Only this person's expenses":sc==="all"?"All sites":sc;}
-function floatMatch(name,e){
-  if(e.kind!=="expense") return false;
+function inFloatScope(name,e){
   const sc=floatScopeOf(name);
   if(sc==="self") return e.person===name;
   if(sc==="all") return true;
   return e.site===sc;
 }
-function floatSpent(name,ym){let s=0;DB.entries.forEach(e=>{if((e.date||'').slice(0,7)===ym && floatMatch(name,e))s+=+e.amount||0;});return s;}
+function floatMonth(name,ym){
+  let spent=0,ret=0;
+  DB.entries.forEach(e=>{
+    if((e.date||'').slice(0,7)!==ym) return;
+    if(!inFloatScope(name,e)) return;
+    if(e.kind==="expense") spent+=+e.amount||0;
+    else if(e.kind==="return") ret+=+e.amount||0;
+  });
+  return {spent,ret};
+}
 function monthsFromTo(a,b){const out=[];let[ay,am]=a.split('-').map(Number);const[by,bm]=b.split('-').map(Number);let g=0;while((ay<by||(ay===by&&am<=bm))&&g<600){out.push(ay+'-'+String(am).padStart(2,'0'));am++;if(am>12){am=1;ay++;}g++;}return out;}
 function floatCalc(name,ym){
   const alw=personAllowance(name); const scope=floatScopeOf(name); const start=floatStartOf(name);
-  if(alw<=0) return {alw:0,open:0,spent:0,close:0,scope,start};
-  if(ym<start) return {alw,open:0,spent:0,close:0,scope,start,before:true};
+  if(alw<=0) return {alw:0,open:0,spent:0,ret:0,close:0,scope,start};
+  if(ym<start) return {alw,open:0,spent:0,ret:0,close:0,scope,start,before:true};
   const months=monthsFromTo(start,ym);
   let open=0;
-  for(let i=0;i<months.length-1;i++) open+=alw-floatSpent(name,months[i]);
-  const spent=floatSpent(name,ym);
-  return {alw,open,spent,close:open+alw-spent,scope,start};
+  for(let i=0;i<months.length-1;i++){const fm=floatMonth(name,months[i]); open+=alw-fm.spent+fm.ret;}
+  const fm=floatMonth(name,ym);
+  return {alw,open,spent:fm.spent,ret:fm.ret,close:open+alw-fm.spent+fm.ret,scope,start};
 }
 let _alwMonth="";
 function setAlwMonth(v){_alwMonth=v||curYM();render();}
@@ -427,15 +435,41 @@ function viewDashboard(){
   const recent=[...ent].sort((a,b)=>(b.ts||0)-(a.ts||0)).slice(0,8);
   const rng=computeRange();
   const pal=["#7a0d0d","#1d4e89","#1f8a4c","#b5660b","#6b3fa0","#0d7a74","#a3341f","#48526b","#9e1b1b"];
+  // Office float (monthly) — use the scoped month, else current month
+  const fym = rng.from? rng.from.slice(0,7) : curYM();
+  const holders=DB.people.filter(p=>(+p.allowance||0)>0);
+  let fAlw=0,fOpen=0,fSpent=0,fRet=0,fClose=0;
+  const fRows=holders.map(p=>{const fc=floatCalc(p.name,fym);fAlw+=fc.alw;fOpen+=fc.open;fSpent+=fc.spent;fRet+=fc.ret;fClose+=fc.close;return {name:p.name,...fc};});
 
   return `
   <div class="row-flex" style="margin:-4px 0 14px"><span class="pill blue">${esc(siteF==="__all"?'All Sites':siteF)}</span><span class="pill mut">${esc(rng.label)}</span></div>
   <div class="cards">
     <div class="card stat"><div class="lbl">◴ Total Expense</div><div class="val">${INR(total)}</div><div class="dlt">${expEnt.length} expense entries</div></div>
-    <div class="card stat"><div class="lbl">◉ Advances Given</div><div class="val" style="color:var(--blue)">${INR(advTot)}</div><div class="dlt">cash handed to persons</div></div>
+    ${holders.length?`
+    <div class="card stat" style="border-top:3px solid var(--blue)"><div class="lbl">◈ Monthly Float (added)</div><div class="val" style="color:var(--blue)">${INR(fAlw)}</div><div class="dlt">${esc(ymLabel(fym))}${fOpen?` · +${INRp(fOpen)} carried`:''}</div></div>
+    <div class="card stat" style="border-top:3px solid ${fClose<0?'var(--bad)':'var(--good)'}"><div class="lbl">◈ Float Balance (live)</div><div class="val" style="color:${fClose<0?'var(--bad)':'var(--good)'}">${fClose>=0?INR(fClose):'('+INR(-fClose)+')'}</div><div class="dlt">spent ${INRp(fSpent)}${fRet?` · returned ${INRp(fRet)}`:''} this month</div></div>
+    `:''}
     <div class="card stat"><div class="lbl">⚠ Unsettled (held by persons)</div><div class="val" style="color:var(--warn)">${INR(totalOut)}</div><div class="dlt">${outs.filter(o=>o.bal>0).length} person(s) to account</div></div>
     <div class="card stat"><div class="lbl">▣ Active Heads</div><div class="val">${heads.length}</div><div class="dlt">of ${DB.heads.length} category heads</div></div>
   </div>
+
+  ${holders.length?`
+  <div class="card pad" style="margin-top:18px;border-left:4px solid var(--blue)">
+    <div class="sec-title" style="margin-top:0">◈ Office Float — ${esc(ymLabel(fym))} <span class="mini" style="font-weight:500;text-transform:none;letter-spacing:0">(deducts on every expense, adds back on every return)</span></div>
+    <div class="tbl-wrap" style="box-shadow:none;border:0">
+      <table><thead><tr><th>Holder</th><th>Covers</th><th class="num">Added this month</th><th class="num">Carried in</th><th class="num">Spent</th><th class="num">Returned</th><th class="num">Balance now</th></tr></thead><tbody>
+      ${fRows.map(r=>`<tr>
+        <td><b>${esc(r.name)}</b></td>
+        <td><span class="pill mut">${esc(scopeLabel(r.scope))}</span></td>
+        <td class="num">${INRp(r.alw)}</td>
+        <td class="num">${INRp(r.open)}</td>
+        <td class="num amt-exp">${INRp(r.spent)}</td>
+        <td class="num amt-ret">${INRp(r.ret)}</td>
+        <td class="num"><b style="font-size:16px;color:${r.close<0?'var(--bad)':'var(--good)'}">${r.close>=0?INR(r.close):'('+INR(-r.close)+')'}</b></td>
+      </tr>`).join('')}
+      </tbody></table>
+    </div>
+  </div>`:''}
 
   <div class="grid g2" style="margin-top:18px">
     <div class="card pad">
