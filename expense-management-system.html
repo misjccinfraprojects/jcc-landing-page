@@ -176,6 +176,7 @@
       <button data-v="entry"><span class="ic">✚</span> New Entry</button>
       <div class="grp">Tracking</div>
       <button data-v="ledger"><span class="ic">◉</span> Person Ledger</button>
+      <button data-v="allowance"><span class="ic">◈</span> Monthly Allowance</button>
       <button data-v="history"><span class="ic">≡</span> All Entries</button>
       <button data-v="budget"><span class="ic">◐</span> Budget</button>
       <div class="grp">Output</div>
@@ -224,9 +225,9 @@ const DEFAULT={
   settings:{company:"JCC Infraprojects Pvt. Ltd.", place:"Ajmer, Rajasthan", preparedBy:"", checkedBy:""},
   sites:["Head Office (Ajmer)","Bharatpur Elevated Flyover","Gandhinagar Railway Station","JNE Pkg-04 (Parbhani)","Jalore ROB (LC-114)","Amritsar Station"],
   heads:["Office Exp.","Postage / Courier Exp.","Computer Repairing / Stationary","Refreshment Exp.","Mess Exp.","Repairing Works","Travelling Exp.","Newspaper / Periodicals","Advance / Misc."],
-  people:[{name:"Rajkumar",phone:""},{name:"Arun",phone:""},{name:"Nitin Kumar",phone:""}],
+  people:[{name:"Rajkumar",phone:"",allowance:0},{name:"Arun",phone:"",allowance:0},{name:"Nitin Kumar",phone:"",allowance:15000}],
   budgets:{},
-  entries:[]   // {id,date,kind,site,head,person,particular,amount,mode,ts}
+  entries:[]   // {id,date,kind,site,head,person,particular,amount,mode,alw,ts}
 };
 let DB=load();
 function load(){
@@ -234,7 +235,8 @@ function load(){
     const r=JSON.parse(localStorage.getItem(KEY));
     if(r&&r.entries){
       const db=Object.assign(JSON.parse(JSON.stringify(DEFAULT)),r);
-      if(db.people&&db.people.length&&typeof db.people[0]==="string") db.people=db.people.map(n=>({name:n,phone:""}));
+      if(db.people&&db.people.length&&typeof db.people[0]==="string") db.people=db.people.map(n=>({name:n,phone:"",allowance:0}));
+      db.people.forEach(p=>{if(p.allowance===undefined)p.allowance=0;});
       (db.entries||[]).forEach(e=>{if(e.mode===undefined)e.mode="Cash";});
       return db;
     }
@@ -295,8 +297,78 @@ function personBalance(name, siteFilter){
   return {adv,exp,ret,bal:adv-exp-ret};
 }
 
+/* ===================== MONTHLY ALLOWANCE ===================== */
+function personAllowance(name){const p=DB.people.find(x=>x.name===name);return p?(+p.allowance||0):0;}
+function curYM(){return todayISO().slice(0,7);}
+function ymLabel(ym){const [y,m]=ym.split('-');return new Date(+y,+m-1,1).toLocaleString('en-US',{month:'long',year:'numeric'});}
+function allowanceCredited(name,ym){return DB.entries.some(e=>e.person===name && e.alw && (e.date||'').slice(0,7)===ym);}
+function personMonth(name,ym){
+  let cred=0,spent=0,ret=0;
+  DB.entries.forEach(e=>{
+    if(e.person!==name) return;
+    if((e.date||'').slice(0,7)!==ym) return;
+    if(e.kind==='advance') cred+=+e.amount||0;
+    else if(e.kind==='return') ret+=+e.amount||0;
+    else spent+=+e.amount||0;
+  });
+  return {cred,spent,ret,bal:cred-spent-ret};
+}
+function creditAllowance(name,ym){
+  const amt=personAllowance(name);
+  if(amt<=0){toast("Set a monthly allowance first");return false;}
+  if(allowanceCredited(name,ym)){toast("Already credited for "+ymLabel(ym));return false;}
+  DB.entries.push({id:uid(),date:ym+"-01",kind:"advance",site:DB.sites[0]||"Head Office (Ajmer)",head:"Advance / Misc.",person:name,particular:"Monthly allowance — "+ymLabel(ym),amount:amt,mode:"Cash",alw:true,ts:Date.now()});
+  save(); return true;
+}
+let _alwMonth="";
+function setAlwMonth(v){_alwMonth=v||curYM();render();}
+function markReceived(name){ if(creditAllowance(name,_alwMonth)){render();toast("Credited ✔ — "+name);} }
+function creditAllPending(){
+  let n=0; DB.people.forEach(p=>{ if((+p.allowance||0)>0 && !allowanceCredited(p.name,_alwMonth)){ if(creditAllowance(p.name,_alwMonth))n++; }});
+  render(); toast(n?("Credited "+n+" person(s) ✔"):"Nothing pending");
+}
+function viewAllowance(){
+  if(!_alwMonth) _alwMonth=curYM();
+  const ym=_alwMonth;
+  const withAlw=DB.people.filter(p=>(+p.allowance||0)>0);
+  const totMonthlyBudget=withAlw.reduce((a,p)=>a+(+p.allowance||0),0);
+  const pending=withAlw.filter(p=>!allowanceCredited(p.name,ym)).length;
+  const rows=withAlw.map(p=>{
+    const name=p.name;
+    const credited=allowanceCredited(name,ym);
+    const m=personMonth(name,ym);
+    const inhand=personBalance(name,"__all").bal;
+    return `<tr>
+      <td><b>${esc(name)}</b>${personPhone(name)?` <span class="mini">· ${esc(personPhone(name))}</span>`:''}</td>
+      <td class="num">${INRp(p.allowance)}</td>
+      <td>${credited?`<span class="pill good">✓ Received</span>`:`<button class="btn p sm" onclick="markReceived('${esc(name)}')">Mark received</button>`}</td>
+      <td class="num amt-exp">${INRp(m.spent)}</td>
+      <td class="num"><b style="color:${inhand>0.001?'var(--good)':inhand<-0.001?'var(--bad)':'var(--slate)'}">${inhand>=0?INRp(inhand):'('+INRp(-inhand)+')'}</b></td>
+      <td class="right nowrap"><button class="btn sm ghost" onclick="openLedger('${esc(name)}')">Ledger</button><button class="btn sm ghost" onclick="printStatement('${esc(name)}')">🖶</button></td>
+    </tr>`;
+  }).join('');
+  const noAlw=DB.people.filter(p=>!((+p.allowance||0)>0));
+  return `
+  <div class="card pad" style="margin-bottom:16px">
+    <div class="row-flex">
+      <div><label class="fl" style="margin-bottom:0">Allowance month</label></div>
+      <input type="month" class="inp" style="width:auto" value="${ym}" onchange="setAlwMonth(this.value)">
+      <div class="spacer"></div>
+      <span class="pill mut">Total monthly float ${INR(totMonthlyBudget)}</span>
+      ${pending?`<button class="btn g sm" onclick="creditAllPending()">Credit all pending (${pending})</button>`:`<span class="pill good">All credited for ${esc(ymLabel(ym))}</span>`}
+    </div>
+    <div class="hint">Each month, click <b>Mark received</b> (or <b>Credit all pending</b>) to add that person's fixed amount. Every expense you tag to them then deducts from it. <b>In hand</b> is their live balance — this month's amount plus whatever was left over from before, minus all spends.</div>
+  </div>
+
+  <div class="tbl-wrap">
+    <table><thead><tr><th>Person</th><th class="num">Allowance / month</th><th>${esc(ymLabel(ym))} status</th><th class="num">Spent this month</th><th class="num">Balance in hand</th><th class="right">Actions</th></tr></thead>
+    <tbody>${rows|| `<tr><td colspan="6"><div class="empty"><div class="big">◈</div>No person has a monthly allowance yet.<br><span class="mini">Set one in <b>Masters → Persons</b> (e.g. Nitin Kumar ₹15,000).</span></div></td></tr>`}</tbody></table>
+  </div>
+  ${noAlw.length?`<div class="hint" style="margin-top:10px">No allowance set for: ${noAlw.map(p=>esc(p.name)).join(', ')}. Add one in <b>Masters → Persons</b> if they also get a fixed monthly amount.</div>`:''}`;
+}
+
 /* ===================== NAV ===================== */
-const TITLES={dashboard:["Dashboard","Head office & site expense overview"],entry:["New Entry","Add an expense, advance or return — minimum fields"],ledger:["Person Ledger","Doer-wise advances, expenses & running balance"],history:["All Entries","Full history with date & other filters"],budget:["Budget","Set budgets and track budget vs actual"],report:["Reports","Expense statement & person statement — print / PDF"],masters:["Masters & Backup","Manage sites, heads, persons & data backup"]};
+const TITLES={dashboard:["Dashboard","Head office & site expense overview"],entry:["New Entry","Add an expense, advance or return — minimum fields"],ledger:["Person Ledger","Doer-wise advances, expenses & running balance"],allowance:["Monthly Allowance","Fixed monthly float per person — credit each month, expenses auto-deduct"],history:["All Entries","Full history with date & other filters"],budget:["Budget","Set budgets and track budget vs actual"],report:["Reports","Expense statement & person statement — print / PDF"],masters:["Masters & Backup","Manage sites, heads, persons & data backup"]};
 let VIEW="dashboard";
 function go(v){VIEW=v;document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
   document.getElementById('pageTitle').textContent=TITLES[v][0];
@@ -318,6 +390,7 @@ function render(){
   if(VIEW==="dashboard") el.innerHTML=viewDashboard();
   else if(VIEW==="entry") el.innerHTML=viewEntry();
   else if(VIEW==="ledger") el.innerHTML=viewLedger();
+  else if(VIEW==="allowance") el.innerHTML=viewAllowance();
   else if(VIEW==="history") el.innerHTML=viewHistory();
   else if(VIEW==="budget") el.innerHTML=viewBudget();
   else if(VIEW==="report") el.innerHTML=viewReport();
@@ -597,6 +670,19 @@ function viewLedger(){
     <button class="btn sm" onclick="printStatement('${esc(_ledgerPerson)}')">🖶 Statement</button>
     <button class="btn sm" onclick="go('entry')">✚ New</button>
   </div>
+
+  ${(function(){const al=personAllowance(_ledgerPerson);if(al<=0)return '';const ym=curYM();const cr=allowanceCredited(_ledgerPerson,ym);const m=personMonth(_ledgerPerson,ym);return `
+  <div class="card pad" style="margin-bottom:16px;border-left:4px solid var(--blue)">
+    <div class="row-flex">
+      <span class="pill blue">◈ Monthly allowance ${INR(al)}</span>
+      <span class="mini">${esc(ymLabel(ym))}:</span>
+      ${cr?`<span class="pill good">✓ Received</span>`:`<button class="btn p sm" onclick="markReceived('${esc(_ledgerPerson)}')">Mark received</button>`}
+      <span class="pill mut">Spent this month ${INRp(m.spent)}</span>
+      <span class="pill ${b.bal>0.001?'good':'mut'}">In hand ${INRp(b.bal)}</span>
+      <div class="spacer"></div>
+      <button class="btn sm ghost" onclick="go('allowance')">Open allowance board →</button>
+    </div>
+  </div>`;})()}
 
   <div class="cards" style="margin-bottom:16px">
     <div class="card stat"><div class="lbl">Total Given (Advance)</div><div class="val" style="color:var(--blue)">${INR(b.adv)}</div></div>
@@ -916,23 +1002,25 @@ function peopleCard(){
   return `<div class="card pad">
     <div class="sec-title" style="margin-top:0">◉ Persons / Doers <span class="pill mut">${DB.people.length}</span></div>
     <div class="row-flex" style="margin-bottom:12px">
-      <input class="inp" id="pp_name" placeholder="Name" style="flex:2;min-width:120px">
-      <input class="inp" id="pp_phone" placeholder="Phone (optional)" style="flex:1;min-width:110px">
+      <input class="inp" id="pp_name" placeholder="Name" style="flex:2;min-width:110px">
+      <input class="inp" id="pp_phone" placeholder="Phone (optional)" style="flex:1;min-width:100px">
+      <input class="inp" id="pp_alw" type="number" min="0" placeholder="Monthly ₹ (optional)" style="flex:1;min-width:120px">
       <button class="btn p sm" onclick="addPersonMaster()">＋ Add</button>
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:8px">
-      ${DB.people.map((p,i)=>`<span class="chip"><b>${esc(p.name)}</b>${p.phone?` <span class="ph">📞 ${esc(p.phone)}</span>`:''} <button class="x" title="Edit" onclick="editPerson('${esc(p.name)}')">✎</button><button class="x" title="Remove" onclick="removePerson(${i})">×</button></span>`).join('')||'<span class="mini">None yet.</span>'}
+      ${DB.people.map((p,i)=>`<span class="chip"><b>${esc(p.name)}</b>${p.phone?` <span class="ph">📞 ${esc(p.phone)}</span>`:''}${(+p.allowance||0)>0?` <span class="ph" style="color:var(--blue)">◈ ${INRp(p.allowance)}/mo</span>`:''} <button class="x" title="Edit" onclick="editPerson('${esc(p.name)}')">✎</button><button class="x" title="Remove" onclick="removePerson(${i})">×</button></span>`).join('')||'<span class="mini">None yet.</span>'}
     </div>
+    <div class="hint">Monthly ₹ = fixed amount the person gets each month (e.g. Nitin Kumar ₹15,000). Manage it in <b>Monthly Allowance</b>.</div>
   </div>`;
 }
 function addPersonMaster(){
   const name=val2('pp_name').trim(); if(!name){toast("Enter a name");return;}
   if(DB.people.some(p=>p.name===name)){toast("Already exists");return;}
-  DB.people.push({name,phone:val2('pp_phone').trim()});save();render();toast("Added ✔");
+  DB.people.push({name,phone:val2('pp_phone').trim(),allowance:parseFloat(val2('pp_alw'))||0});save();render();toast("Added ✔");
 }
 function editPerson(name){
   const p=DB.people.find(x=>x.name===name); if(!p)return;
-  openModal("Edit Person",`<label class="fl">Name</label><input id="ep_name" class="inp" value="${esc(p.name)}"><label class="fl" style="margin-top:10px">Phone</label><input id="ep_phone" class="inp" value="${esc(p.phone)}" placeholder="10-digit mobile">`,
+  openModal("Edit Person",`<label class="fl">Name</label><input id="ep_name" class="inp" value="${esc(p.name)}"><label class="fl" style="margin-top:10px">Phone</label><input id="ep_phone" class="inp" value="${esc(p.phone)}" placeholder="10-digit mobile"><label class="fl" style="margin-top:10px">Monthly allowance (₹)</label><input id="ep_alw" class="inp" type="number" min="0" value="${(+p.allowance||0)||''}" placeholder="e.g. 15000 — leave blank if none"><div class="hint">Fixed amount this person gets every month; expenses deduct from it.</div>`,
     `<button class="btn" onclick="closeModal()">Cancel</button><button class="btn p" onclick="doEditPerson('${esc(name)}')">Save</button>`);
   setTimeout(()=>document.getElementById('ep_name').focus(),50);
 }
@@ -941,7 +1029,7 @@ function doEditPerson(oldName){
   const nn=val2('ep_name').trim(); if(!nn){closeModal();return;}
   if(nn!==oldName && DB.people.some(x=>x.name===nn)){toast("Name already exists");return;}
   if(nn!==oldName){DB.entries.forEach(e=>{if(e.person===oldName)e.person=nn;}); if(_ledgerPerson===oldName)_ledgerPerson=nn;}
-  p.name=nn; p.phone=val2('ep_phone').trim();
+  p.name=nn; p.phone=val2('ep_phone').trim(); p.allowance=parseFloat(val2('ep_alw'))||0;
   save();closeModal();render();toast("Saved ✔");
 }
 function removePerson(i){
@@ -994,7 +1082,8 @@ function importBackup(inp){
 }
 function doImport(str){
   const d=JSON.parse(JSON.parse(str));
-  if(d.people&&d.people.length&&typeof d.people[0]==="string") d.people=d.people.map(n=>({name:n,phone:""}));
+  if(d.people&&d.people.length&&typeof d.people[0]==="string") d.people=d.people.map(n=>({name:n,phone:"",allowance:0}));
+  (d.people||[]).forEach(p=>{if(p.allowance===undefined)p.allowance=0;});
   (d.entries||[]).forEach(e=>{if(e.mode===undefined)e.mode="Cash";});
   const mode=[...document.querySelectorAll('input[name=imode]')].find(x=>x.checked).value;
   if(mode==="replace"){DB=Object.assign(JSON.parse(JSON.stringify(DEFAULT)),d);}
