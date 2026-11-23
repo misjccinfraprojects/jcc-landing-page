@@ -225,7 +225,7 @@ const DEFAULT={
   settings:{company:"JCC Infraprojects Pvt. Ltd.", place:"Ajmer, Rajasthan", preparedBy:"", checkedBy:""},
   sites:["Head Office (Ajmer)","Bharatpur Elevated Flyover","Gandhinagar Railway Station","JNE Pkg-04 (Parbhani)","Jalore ROB (LC-114)","Amritsar Station"],
   heads:["Office Exp.","Postage / Courier Exp.","Computer Repairing / Stationary","Refreshment Exp.","Mess Exp.","Repairing Works","Travelling Exp.","Newspaper / Periodicals","Advance / Misc."],
-  people:[{name:"Rajkumar",phone:"",allowance:0},{name:"Arun",phone:"",allowance:0},{name:"Nitin Kumar",phone:"",allowance:15000}],
+  people:[{name:"Rajkumar",phone:"",allowance:0},{name:"Arun",phone:"",allowance:0},{name:"Nitin Kumar",phone:"",allowance:15000,floatSite:"all"}],
   budgets:{},
   entries:[]   // {id,date,kind,site,head,person,particular,amount,mode,alw,ts}
 };
@@ -236,7 +236,7 @@ function load(){
     if(r&&r.entries){
       const db=Object.assign(JSON.parse(JSON.stringify(DEFAULT)),r);
       if(db.people&&db.people.length&&typeof db.people[0]==="string") db.people=db.people.map(n=>({name:n,phone:"",allowance:0}));
-      db.people.forEach(p=>{if(p.allowance===undefined)p.allowance=0;});
+      db.people.forEach(p=>{if(p.allowance===undefined)p.allowance=0;if((+p.allowance||0)>0&&!p.floatSite)p.floatSite="all";});
       (db.entries||[]).forEach(e=>{if(e.mode===undefined)e.mode="Cash";});
       return db;
     }
@@ -297,53 +297,61 @@ function personBalance(name, siteFilter){
   return {adv,exp,ret,bal:adv-exp-ret};
 }
 
-/* ===================== MONTHLY ALLOWANCE ===================== */
+/* ===================== MONTHLY ALLOWANCE / OFFICE FLOAT ===================== */
+/* A float = a fixed monthly amount held by a person. "Covers" decides which
+   expenses come out of it: all sites, one site, or only that person's own
+   tagged expenses. Balance deducts automatically — no manual crediting. */
 function personAllowance(name){const p=DB.people.find(x=>x.name===name);return p?(+p.allowance||0):0;}
 function curYM(){return todayISO().slice(0,7);}
 function ymLabel(ym){const [y,m]=ym.split('-');return new Date(+y,+m-1,1).toLocaleString('en-US',{month:'long',year:'numeric'});}
-function allowanceCredited(name,ym){return DB.entries.some(e=>e.person===name && e.alw && (e.date||'').slice(0,7)===ym);}
-function personMonth(name,ym){
-  let cred=0,spent=0,ret=0;
-  DB.entries.forEach(e=>{
-    if(e.person!==name) return;
-    if((e.date||'').slice(0,7)!==ym) return;
-    if(e.kind==='advance') cred+=+e.amount||0;
-    else if(e.kind==='return') ret+=+e.amount||0;
-    else spent+=+e.amount||0;
-  });
-  return {cred,spent,ret,bal:cred-spent-ret};
+function floatScopeOf(name){const p=DB.people.find(x=>x.name===name);return (p&&p.floatSite)?p.floatSite:"all";}
+function floatStartOf(name){const p=DB.people.find(x=>x.name===name);return (p&&p.allowanceStart)?p.allowanceStart:curYM();}
+function scopeLabel(sc){return sc==="self"?"Only this person's expenses":sc==="all"?"All sites":sc;}
+function floatMatch(name,e){
+  if(e.kind!=="expense") return false;
+  const sc=floatScopeOf(name);
+  if(sc==="self") return e.person===name;
+  if(sc==="all") return true;
+  return e.site===sc;
 }
-function creditAllowance(name,ym){
-  const amt=personAllowance(name);
-  if(amt<=0){toast("Set a monthly allowance first");return false;}
-  if(allowanceCredited(name,ym)){toast("Already credited for "+ymLabel(ym));return false;}
-  DB.entries.push({id:uid(),date:ym+"-01",kind:"advance",site:DB.sites[0]||"Head Office (Ajmer)",head:"Advance / Misc.",person:name,particular:"Monthly allowance — "+ymLabel(ym),amount:amt,mode:"Cash",alw:true,ts:Date.now()});
-  save(); return true;
+function floatSpent(name,ym){let s=0;DB.entries.forEach(e=>{if((e.date||'').slice(0,7)===ym && floatMatch(name,e))s+=+e.amount||0;});return s;}
+function monthsFromTo(a,b){const out=[];let[ay,am]=a.split('-').map(Number);const[by,bm]=b.split('-').map(Number);let g=0;while((ay<by||(ay===by&&am<=bm))&&g<600){out.push(ay+'-'+String(am).padStart(2,'0'));am++;if(am>12){am=1;ay++;}g++;}return out;}
+function floatCalc(name,ym){
+  const alw=personAllowance(name); const scope=floatScopeOf(name); const start=floatStartOf(name);
+  if(alw<=0) return {alw:0,open:0,spent:0,close:0,scope,start};
+  if(ym<start) return {alw,open:0,spent:0,close:0,scope,start,before:true};
+  const months=monthsFromTo(start,ym);
+  let open=0;
+  for(let i=0;i<months.length-1;i++) open+=alw-floatSpent(name,months[i]);
+  const spent=floatSpent(name,ym);
+  return {alw,open,spent,close:open+alw-spent,scope,start};
 }
 let _alwMonth="";
 function setAlwMonth(v){_alwMonth=v||curYM();render();}
-function markReceived(name){ if(creditAllowance(name,_alwMonth)){render();toast("Credited ✔ — "+name);} }
-function creditAllPending(){
-  let n=0; DB.people.forEach(p=>{ if((+p.allowance||0)>0 && !allowanceCredited(p.name,_alwMonth)){ if(creditAllowance(p.name,_alwMonth))n++; }});
-  render(); toast(n?("Credited "+n+" person(s) ✔"):"Nothing pending");
+function setAllowance(name,v){const p=DB.people.find(x=>x.name===name);if(!p)return;p.allowance=parseFloat(v)||0;if(p.allowance>0&&!p.floatSite)p.floatSite="all";if(p.allowance>0&&!p.allowanceStart)p.allowanceStart=_alwMonth||curYM();save();render();}
+function setFloatScope(name,v){const p=DB.people.find(x=>x.name===name);if(!p)return;p.floatSite=v;save();render();}
+function setFloatStart(name,v){const p=DB.people.find(x=>x.name===name);if(!p)return;p.allowanceStart=v||curYM();save();render();}
+function scopeOptions(name){const cur=floatScopeOf(name);
+  return `<option value="all" ${cur==="all"?"selected":""}>All sites</option>`+
+    DB.sites.map(s=>`<option value="${esc(s)}" ${cur===s?"selected":""}>${esc(s)} only</option>`).join('')+
+    `<option value="self" ${cur==="self"?"selected":""}>Only this person's own expenses</option>`;
 }
 function viewAllowance(){
   if(!_alwMonth) _alwMonth=curYM();
   const ym=_alwMonth;
   const withAlw=DB.people.filter(p=>(+p.allowance||0)>0);
-  const totMonthlyBudget=withAlw.reduce((a,p)=>a+(+p.allowance||0),0);
-  const pending=withAlw.filter(p=>!allowanceCredited(p.name,ym)).length;
+  const totMonthly=withAlw.reduce((a,p)=>a+(+p.allowance||0),0);
+  const totInHand=withAlw.reduce((a,p)=>a+floatCalc(p.name,ym).close,0);
   const rows=withAlw.map(p=>{
-    const name=p.name;
-    const credited=allowanceCredited(name,ym);
-    const m=personMonth(name,ym);
-    const inhand=personBalance(name,"__all").bal;
+    const name=p.name; const fc=floatCalc(name,ym);
     return `<tr>
-      <td><b>${esc(name)}</b>${personPhone(name)?` <span class="mini">· ${esc(personPhone(name))}</span>`:''}</td>
-      <td class="num">${INRp(p.allowance)}</td>
-      <td>${credited?`<span class="pill good">✓ Received</span>`:`<button class="btn p sm" onclick="markReceived('${esc(name)}')">Mark received</button>`}</td>
-      <td class="num amt-exp">${INRp(m.spent)}</td>
-      <td class="num"><b style="color:${inhand>0.001?'var(--good)':inhand<-0.001?'var(--bad)':'var(--slate)'}">${inhand>=0?INRp(inhand):'('+INRp(-inhand)+')'}</b></td>
+      <td><b>${esc(name)}</b>${personPhone(name)?`<div class="mini">${esc(personPhone(name))}</div>`:''}
+          <div class="mini">from <input type="month" value="${esc(fc.start)}" onchange="setFloatStart('${esc(name)}',this.value)" style="border:1px solid var(--line);border-radius:6px;padding:1px 4px;font-size:11px"></div></td>
+      <td class="num"><input type="number" class="inp" style="width:110px;padding:6px 8px;text-align:right" value="${p.allowance||''}" onchange="setAllowance('${esc(name)}',this.value)"></td>
+      <td><select class="inp" style="padding:6px 8px;min-width:150px" onchange="setFloatScope('${esc(name)}',this.value)">${scopeOptions(name)}</select></td>
+      <td class="num">${INRp(fc.open)}</td>
+      <td class="num amt-exp">${INRp(fc.spent)}</td>
+      <td class="num"><b style="color:${fc.close>0.001?'var(--good)':fc.close<-0.001?'var(--bad)':'var(--slate)'};font-size:15px">${fc.close>=0?INR(fc.close):'('+INR(-fc.close)+')'}</b></td>
       <td class="right nowrap"><button class="btn sm ghost" onclick="openLedger('${esc(name)}')">Ledger</button><button class="btn sm ghost" onclick="printStatement('${esc(name)}')">🖶</button></td>
     </tr>`;
   }).join('');
@@ -351,20 +359,21 @@ function viewAllowance(){
   return `
   <div class="card pad" style="margin-bottom:16px">
     <div class="row-flex">
-      <div><label class="fl" style="margin-bottom:0">Allowance month</label></div>
+      <label class="fl" style="margin-bottom:0">Month</label>
       <input type="month" class="inp" style="width:auto" value="${ym}" onchange="setAlwMonth(this.value)">
       <div class="spacer"></div>
-      <span class="pill mut">Total monthly float ${INR(totMonthlyBudget)}</span>
-      ${pending?`<button class="btn g sm" onclick="creditAllPending()">Credit all pending (${pending})</button>`:`<span class="pill good">All credited for ${esc(ymLabel(ym))}</span>`}
+      <span class="pill mut">Total float ${INR(totMonthly)}/mo</span>
+      <span class="pill ${totInHand<0?'bad':'good'}">In hand ${INR(totInHand)}</span>
     </div>
-    <div class="hint">Each month, click <b>Mark received</b> (or <b>Credit all pending</b>) to add that person's fixed amount. Every expense you tag to them then deducts from it. <b>In hand</b> is their live balance — this month's amount plus whatever was left over from before, minus all spends.</div>
+    <div class="hint"><b>Covers</b> decides which expenses come out of a float. <b>All sites</b> = every expense entered reduces it (whoever did it). Pick <b>one site</b> to limit it to that site's expenses. The balance deducts automatically the moment you save an expense — no "received" click needed. Leftover carries into next month from the <b>from</b> month.</div>
   </div>
 
   <div class="tbl-wrap">
-    <table><thead><tr><th>Person</th><th class="num">Allowance / month</th><th>${esc(ymLabel(ym))} status</th><th class="num">Spent this month</th><th class="num">Balance in hand</th><th class="right">Actions</th></tr></thead>
-    <tbody>${rows|| `<tr><td colspan="6"><div class="empty"><div class="big">◈</div>No person has a monthly allowance yet.<br><span class="mini">Set one in <b>Masters → Persons</b> (e.g. Nitin Kumar ₹15,000).</span></div></td></tr>`}</tbody></table>
+    <table><thead><tr><th>Person (holds float)</th><th class="num">Amount / month</th><th>Covers</th><th class="num">Opening (carry)</th><th class="num">Spent in ${esc(ymLabel(ym))}</th><th class="num">Balance in hand</th><th class="right">Actions</th></tr></thead>
+    <tbody>${rows|| `<tr><td colspan="7"><div class="empty"><div class="big">◈</div>No one has a monthly float yet.<br><span class="mini">Set an amount below, or in <b>Masters → Persons</b> (e.g. Nitin Kumar ₹15,000, Covers: All sites).</span></div></td></tr>`}</tbody></table>
   </div>
-  ${noAlw.length?`<div class="hint" style="margin-top:10px">No allowance set for: ${noAlw.map(p=>esc(p.name)).join(', ')}. Add one in <b>Masters → Persons</b> if they also get a fixed monthly amount.</div>`:''}`;
+  ${noAlw.length?`<div class="hint" style="margin-top:10px">No float for: ${noAlw.map(p=>esc(p.name)).join(', ')} — set an amount for them in <b>Masters → Persons</b> if they also hold a fixed monthly cash.</div>`:''}
+  <div class="hint">Example — Nitin holds ₹15,000, Covers = All sites. Arun enters a ₹500 expense → float drops to ₹14,500 automatically, even though it was tagged to Arun.</div>`;
 }
 
 /* ===================== NAV ===================== */
@@ -671,16 +680,16 @@ function viewLedger(){
     <button class="btn sm" onclick="go('entry')">✚ New</button>
   </div>
 
-  ${(function(){const al=personAllowance(_ledgerPerson);if(al<=0)return '';const ym=curYM();const cr=allowanceCredited(_ledgerPerson,ym);const m=personMonth(_ledgerPerson,ym);return `
+  ${(function(){const al=personAllowance(_ledgerPerson);if(al<=0)return '';const ym=curYM();const fc=floatCalc(_ledgerPerson,ym);return `
   <div class="card pad" style="margin-bottom:16px;border-left:4px solid var(--blue)">
     <div class="row-flex">
-      <span class="pill blue">◈ Monthly allowance ${INR(al)}</span>
-      <span class="mini">${esc(ymLabel(ym))}:</span>
-      ${cr?`<span class="pill good">✓ Received</span>`:`<button class="btn p sm" onclick="markReceived('${esc(_ledgerPerson)}')">Mark received</button>`}
-      <span class="pill mut">Spent this month ${INRp(m.spent)}</span>
-      <span class="pill ${b.bal>0.001?'good':'mut'}">In hand ${INRp(b.bal)}</span>
+      <span class="pill blue">◈ Office float ${INR(al)}/mo</span>
+      <span class="mini">Covers: ${esc(scopeLabel(fc.scope))} · ${esc(ymLabel(ym))}</span>
+      <span class="pill mut">Opening ${INRp(fc.open)}</span>
+      <span class="pill mut">Spent ${INRp(fc.spent)}</span>
+      <span class="pill ${fc.close>0.001?'good':fc.close<-0.001?'bad':'mut'}">In hand ${fc.close>=0?INRp(fc.close):'('+INRp(-fc.close)+')'}</span>
       <div class="spacer"></div>
-      <button class="btn sm ghost" onclick="go('allowance')">Open allowance board →</button>
+      <button class="btn sm ghost" onclick="go('allowance')">Open float board →</button>
     </div>
   </div>`;})()}
 
